@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Meus Livros</title>
+<meta name="description" content="Cadastre e organize sua coleção de livros" />
+<meta name="theme-color" content="#0f172a" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Meus Livros" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <h1>📚 Meus Livros</h1>
+  <button id="add-btn" class="icon-btn" aria-label="Adicionar livro" title="Adicionar livro">+</button>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Filtrar por status">
+  <button class="tab active" data-filter="todos" role="tab" aria-selected="true">Todos</button>
+  <button class="tab" data-filter="quero ler" role="tab" aria-selected="false">Quero ler</button>
+  <button class="tab" data-filter="lendo" role="tab" aria-selected="false">Lendo</button>
+  <button class="tab" data-filter="lido" role="tab" aria-selected="false">Lido</button>
+</nav>
+
+<main>
+  <div id="empty-state" class="empty-state" hidden>
+    <p>Você ainda não tem livros por aqui.</p>
+    <button id="empty-add-btn" class="primary-btn">Adicionar meu primeiro livro</button>
+  </div>
+  <ul id="book-list" class="book-list"></ul>
+</main>
+
+<dialog id="book-dialog">
+  <form id="book-form" method="dialog">
+    <h2 id="dialog-title">Adicionar livro</h2>
+
+    <label class="field">
+      <span>Título</span>
+      <input type="text" id="titulo" name="titulo" required autocomplete="off" />
+    </label>
+
+    <label class="field">
+      <span>Autor</span>
+      <input type="text" id="autor" name="autor" autocomplete="off" placeholder="Opcional" />
+    </label>
+
+    <label class="field">
+      <span>Status</span>
+      <select id="status" name="status">
+        <option value="quero ler">Quero ler</option>
+        <option value="lendo">Lendo</option>
+        <option value="lido">Lido</option>
+      </select>
+    </label>
+
+    <fieldset class="field rating-field" id="rating-field" hidden>
+      <legend>Nota</legend>
+      <div class="stars" id="star-picker" data-value="0">
+        <button type="button" class="star" data-value="1" aria-label="1 estrela">★</button>
+        <button type="button" class="star" data-value="2" aria-label="2 estrelas">★</button>
+        <button type="button" class="star" data-value="3" aria-label="3 estrelas">★</button>
+        <button type="button" class="star" data-value="4" aria-label="4 estrelas">★</button>
+        <button type="button" class="star" data-value="5" aria-label="5 estrelas">★</button>
+      </div>
+    </fieldset>
+
+    <input type="hidden" id="book-id" name="id" />
+
+    <div class="dialog-actions">
+      <button type="button" id="cancel-btn" class="ghost-btn">Cancelar</button>
+      <button type="button" id="delete-btn" class="danger-btn" hidden>Excluir</button>
+      <button type="submit" id="save-btn" class="primary-btn">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
