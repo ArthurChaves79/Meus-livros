@@ -38,6 +38,8 @@ const scanDialog = document.getElementById('scan-dialog');
 const scanVideo = document.getElementById('scan-video');
 const scanCancelBtn = document.getElementById('scan-cancel-btn');
 const scanHint = document.getElementById('scan-hint');
+const isbnInput = document.getElementById('isbn-input');
+const isbnLookupBtn = document.getElementById('isbn-lookup-btn');
 
 let currentFilter = 'todos';
 let currentSearch = '';
@@ -287,7 +289,10 @@ let scanRAF = null;
 
 async function openScanner() {
   if (!('BarcodeDetector' in window)) {
-    alert('Seu navegador não suporta leitura de código de barras. Digite os dados manualmente.');
+    alert(
+      'Seu navegador não suporta leitura de código de barras pela câmera (comum no Safari). ' +
+      'Digite o ISBN do livro no campo "Ou digite o ISBN" e toque em Buscar.'
+    );
     return;
   }
 
@@ -360,6 +365,15 @@ async function lookupIsbn(isbn) {
 scanBtn.addEventListener('click', openScanner);
 scanCancelBtn.addEventListener('click', stopScanner);
 scanDialog.addEventListener('cancel', stopScanner);
+
+isbnLookupBtn.addEventListener('click', () => {
+  const isbn = isbnInput.value.replace(/[^0-9Xx]/g, '');
+  if (!isbn) {
+    alert('Digite o ISBN do livro (os números embaixo do código de barras).');
+    return;
+  }
+  lookupIsbn(isbn);
+});
 
 render();
 

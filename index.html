@@ -54,6 +54,14 @@
     <button type="button" id="scan-btn" class="ghost-btn scan-btn">📷 Escanear código de barras (ISBN)</button>
 
     <label class="field">
+      <span>Ou digite o ISBN</span>
+      <div class="isbn-row">
+        <input type="text" id="isbn-input" inputmode="numeric" autocomplete="off" placeholder="Ex: 9788535914849" />
+        <button type="button" id="isbn-lookup-btn" class="ghost-btn">Buscar</button>
+      </div>
+    </label>
+
+    <label class="field">
       <span>Título</span>
       <input type="text" id="titulo" name="titulo" required autocomplete="off" />
     </label>

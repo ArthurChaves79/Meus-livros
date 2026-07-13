@@ -397,6 +397,27 @@ dialog::backdrop {
   align-self: flex-start;
 }
 
+.isbn-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.isbn-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--serif);
+  font-size: 1rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.isbn-row .ghost-btn {
+  flex: none;
+}
+
 .scan-wrap {
   padding: 1.25rem;
   display: flex;
