@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Meus Livros</title>
 <meta name="description" content="Cadastre e organize sua coleção de livros" />
-<meta name="theme-color" content="#1a1410" />
+<meta name="theme-color" content="#0f2941" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -17,12 +17,7 @@
 <body>
 <header class="topbar">
   <div class="brand">
-    <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M6 10c5-3 11-3 15 0v28c-4-3-10-3-15 0V10Z" fill="var(--cover)" stroke="var(--gold)" stroke-width="1.5" stroke-linejoin="round"/>
-      <path d="M42 10c-5-3-11-3-15 0v28c4-3 10-3 15 0V10Z" fill="var(--cover)" stroke="var(--gold)" stroke-width="1.5" stroke-linejoin="round"/>
-      <path d="M24 10v28" stroke="var(--gold)" stroke-width="1.5"/>
-      <path d="M10 16h7M10 21h7M31 16h7M31 21h7" stroke="var(--page)" stroke-width="1.2" stroke-linecap="round"/>
-    </svg>
+    <img class="brand-mark" src="icons/icon-192.png" alt="" width="40" height="40" />
     <div class="brand-text">
       <h1>Meus Livros</h1>
       <p class="tagline">uma pequena biblioteca pessoal</p>
@@ -38,6 +33,12 @@
   <button class="tab" data-filter="lido" role="tab" aria-selected="false">Lido</button>
 </nav>
 
+<div class="search-wrap">
+  <input type="search" id="search-input" placeholder="Buscar por título, autor ou localização" autocomplete="off" />
+</div>
+
+<div id="location-filters" class="location-filters" hidden></div>
+
 <main>
   <div id="empty-state" class="empty-state" hidden>
     <p>Você ainda não tem livros por aqui.</p>
@@ -50,6 +51,8 @@
   <form id="book-form" method="dialog">
     <h2 id="dialog-title">Adicionar livro</h2>
 
+    <button type="button" id="scan-btn" class="ghost-btn scan-btn">📷 Escanear código de barras (ISBN)</button>
+
     <label class="field">
       <span>Título</span>
       <input type="text" id="titulo" name="titulo" required autocomplete="off" />
@@ -58,6 +61,11 @@
     <label class="field">
       <span>Autor</span>
       <input type="text" id="autor" name="autor" autocomplete="off" placeholder="Opcional" />
+    </label>
+
+    <label class="field">
+      <span>Localização na estante</span>
+      <input type="text" id="localizacao" name="localizacao" autocomplete="off" placeholder="Ex: Estante 2, prateleira 3" />
     </label>
 
     <label class="field">
@@ -88,6 +96,17 @@
       <button type="submit" id="save-btn" class="primary-btn">Salvar</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="scan-dialog">
+  <div class="scan-wrap">
+    <h2>Escanear código de barras</h2>
+    <video id="scan-video" class="scan-video" autoplay playsinline muted></video>
+    <p class="scan-hint" id="scan-hint">Aponte a câmera para o código de barras (ISBN) na contracapa do livro.</p>
+    <div class="dialog-actions">
+      <button type="button" id="scan-cancel-btn" class="ghost-btn">Cancelar</button>
+    </div>
+  </div>
 </dialog>
 
 <script src="app.js"></script>

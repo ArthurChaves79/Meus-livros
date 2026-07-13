@@ -15,11 +15,14 @@ const STATUS_CLASS = {
 const bookList = document.getElementById('book-list');
 const emptyState = document.getElementById('empty-state');
 const tabs = document.querySelectorAll('.tab');
+const searchInput = document.getElementById('search-input');
+const locationFiltersEl = document.getElementById('location-filters');
 const dialog = document.getElementById('book-dialog');
 const form = document.getElementById('book-form');
 const dialogTitle = document.getElementById('dialog-title');
 const tituloInput = document.getElementById('titulo');
 const autorInput = document.getElementById('autor');
+const localizacaoInput = document.getElementById('localizacao');
 const statusSelect = document.getElementById('status');
 const ratingField = document.getElementById('rating-field');
 const starPicker = document.getElementById('star-picker');
@@ -30,7 +33,15 @@ const cancelBtn = document.getElementById('cancel-btn');
 const addBtn = document.getElementById('add-btn');
 const emptyAddBtn = document.getElementById('empty-add-btn');
 
+const scanBtn = document.getElementById('scan-btn');
+const scanDialog = document.getElementById('scan-dialog');
+const scanVideo = document.getElementById('scan-video');
+const scanCancelBtn = document.getElementById('scan-cancel-btn');
+const scanHint = document.getElementById('scan-hint');
+
 let currentFilter = 'todos';
+let currentSearch = '';
+let currentLocation = null;
 
 function loadBooks() {
   try {
@@ -60,12 +71,14 @@ function openDialog(book) {
     idInput.value = book.id;
     tituloInput.value = book.titulo;
     autorInput.value = book.autor || '';
+    localizacaoInput.value = book.localizacao || '';
     statusSelect.value = book.status;
     setRating(book.nota || 0);
     deleteBtn.hidden = false;
   } else {
     dialogTitle.textContent = 'Adicionar livro';
     idInput.value = '';
+    localizacaoInput.value = '';
     statusSelect.value = 'quero ler';
     deleteBtn.hidden = true;
   }
@@ -88,10 +101,46 @@ function spineFor(titulo) {
   return `var(--spine-${(hash % SPINE_COUNT) + 1})`;
 }
 
+function renderLocationFilters(allBooks) {
+  const counts = new Map();
+  for (const book of allBooks) {
+    if (!book.localizacao) continue;
+    counts.set(book.localizacao, (counts.get(book.localizacao) || 0) + 1);
+  }
+
+  const locations = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  locationFiltersEl.innerHTML = '';
+  locationFiltersEl.hidden = locations.length === 0;
+
+  for (const loc of locations) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'location-chip' + (currentLocation === loc ? ' active' : '');
+    chip.textContent = `📍 ${loc} (${counts.get(loc)})`;
+    chip.addEventListener('click', () => {
+      currentLocation = currentLocation === loc ? null : loc;
+      render();
+    });
+    locationFiltersEl.appendChild(chip);
+  }
+}
+
 function render() {
   const books = loadBooks();
+  renderLocationFilters(books);
+
+  const search = currentSearch.trim().toLowerCase();
   const visible = books
     .filter((b) => currentFilter === 'todos' || b.status === currentFilter)
+    .filter((b) => !currentLocation || b.localizacao === currentLocation)
+    .filter((b) => {
+      if (!search) return true;
+      return (
+        b.titulo.toLowerCase().includes(search) ||
+        (b.autor || '').toLowerCase().includes(search) ||
+        (b.localizacao || '').toLowerCase().includes(search)
+      );
+    })
     .sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR'));
 
   bookList.innerHTML = '';
@@ -100,7 +149,7 @@ function render() {
   if (books.length > 0 && visible.length === 0) {
     const li = document.createElement('li');
     li.className = 'empty-state';
-    li.textContent = 'Nenhum livro nesta categoria.';
+    li.textContent = 'Nenhum livro encontrado.';
     bookList.appendChild(li);
     return;
   }
@@ -135,6 +184,14 @@ function render() {
     }
 
     li.append(title, author, meta);
+
+    if (book.localizacao) {
+      const loc = document.createElement('div');
+      loc.className = 'location-tag';
+      loc.textContent = `📍 ${book.localizacao}`;
+      li.appendChild(loc);
+    }
+
     li.addEventListener('click', () => openDialog(book));
     bookList.appendChild(li);
   }
@@ -161,6 +218,11 @@ tabs.forEach((tab) => {
   });
 });
 
+searchInput.addEventListener('input', () => {
+  currentSearch = searchInput.value;
+  render();
+});
+
 addBtn.addEventListener('click', () => openDialog(null));
 emptyAddBtn.addEventListener('click', () => openDialog(null));
 cancelBtn.addEventListener('click', closeDialog);
@@ -184,12 +246,14 @@ form.addEventListener('submit', (event) => {
   const id = idInput.value;
   const status = statusSelect.value;
   const nota = status === 'lido' ? Number(starPicker.dataset.value) || null : null;
+  const localizacao = localizacaoInput.value.trim() || null;
   const now = new Date().toISOString();
 
   if (id) {
     const existing = books.find((b) => b.id === id);
     existing.titulo = titulo;
     existing.autor = autorInput.value.trim();
+    existing.localizacao = localizacao;
     if (existing.status !== 'lido' && status === 'lido') {
       existing.lidoEm = now;
     }
@@ -203,6 +267,7 @@ form.addEventListener('submit', (event) => {
       id: crypto.randomUUID(),
       titulo,
       autor: autorInput.value.trim(),
+      localizacao,
       status,
       nota,
       criadoEm: now,
@@ -214,6 +279,87 @@ form.addEventListener('submit', (event) => {
   closeDialog();
   render();
 });
+
+// --- Leitor de código de barras (ISBN) ---
+
+let scanStream = null;
+let scanRAF = null;
+
+async function openScanner() {
+  if (!('BarcodeDetector' in window)) {
+    alert('Seu navegador não suporta leitura de código de barras. Digite os dados manualmente.');
+    return;
+  }
+
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' },
+    });
+  } catch {
+    alert('Não foi possível acessar a câmera. Verifique as permissões do navegador.');
+    return;
+  }
+
+  scanVideo.srcObject = scanStream;
+  scanHint.textContent = 'Aponte a câmera para o código de barras (ISBN) na contracapa do livro.';
+  scanDialog.showModal();
+
+  const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a'] });
+
+  const tick = async () => {
+    if (!scanStream) return;
+    try {
+      const codes = await detector.detect(scanVideo);
+      if (codes.length > 0) {
+        const isbn = codes[0].rawValue;
+        stopScanner();
+        await lookupIsbn(isbn);
+        return;
+      }
+    } catch {
+      // ignore per-frame detection errors and keep trying
+    }
+    scanRAF = requestAnimationFrame(tick);
+  };
+  scanRAF = requestAnimationFrame(tick);
+}
+
+function stopScanner() {
+  if (scanRAF) cancelAnimationFrame(scanRAF);
+  scanRAF = null;
+  if (scanStream) {
+    scanStream.getTracks().forEach((track) => track.stop());
+    scanStream = null;
+  }
+  scanVideo.srcObject = null;
+  if (scanDialog.open) scanDialog.close();
+}
+
+async function lookupIsbn(isbn) {
+  tituloInput.value = 'Buscando informações do livro...';
+  try {
+    const res = await fetch(
+      `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`
+    );
+    const data = await res.json();
+    const info = data[`ISBN:${isbn}`];
+    if (info) {
+      tituloInput.value = info.title || '';
+      autorInput.value = (info.authors || []).map((a) => a.name).join(', ');
+    } else {
+      tituloInput.value = '';
+      alert('Não encontramos esse livro automaticamente. Preencha os dados manualmente.');
+    }
+  } catch {
+    tituloInput.value = '';
+    alert('Não foi possível buscar os dados do livro. Verifique sua conexão e preencha manualmente.');
+  }
+  tituloInput.focus();
+}
+
+scanBtn.addEventListener('click', openScanner);
+scanCancelBtn.addEventListener('click', stopScanner);
+scanDialog.addEventListener('cancel', stopScanner);
 
 render();
 
