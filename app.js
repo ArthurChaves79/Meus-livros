@@ -79,6 +79,15 @@ function closeDialog() {
   dialog.close();
 }
 
+const SPINE_COUNT = 6;
+function spineFor(titulo) {
+  let hash = 0;
+  for (let i = 0; i < titulo.length; i++) {
+    hash = (hash * 31 + titulo.charCodeAt(i)) >>> 0;
+  }
+  return `var(--spine-${(hash % SPINE_COUNT) + 1})`;
+}
+
 function render() {
   const books = loadBooks();
   const visible = books
@@ -100,6 +109,7 @@ function render() {
     const li = document.createElement('li');
     li.className = 'book-card';
     li.dataset.id = book.id;
+    li.style.setProperty('--spine', spineFor(book.titulo));
 
     const title = document.createElement('div');
     title.className = 'title';

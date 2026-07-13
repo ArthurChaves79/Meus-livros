@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Meus Livros</title>
 <meta name="description" content="Cadastre e organize sua coleção de livros" />
-<meta name="theme-color" content="#0f172a" />
+<meta name="theme-color" content="#1a1410" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -16,7 +16,18 @@
 </head>
 <body>
 <header class="topbar">
-  <h1>📚 Meus Livros</h1>
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M6 10c5-3 11-3 15 0v28c-4-3-10-3-15 0V10Z" fill="var(--cover)" stroke="var(--gold)" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M42 10c-5-3-11-3-15 0v28c4-3 10-3 15 0V10Z" fill="var(--cover)" stroke="var(--gold)" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M24 10v28" stroke="var(--gold)" stroke-width="1.5"/>
+      <path d="M10 16h7M10 21h7M31 16h7M31 21h7" stroke="var(--page)" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+    <div class="brand-text">
+      <h1>Meus Livros</h1>
+      <p class="tagline">uma pequena biblioteca pessoal</p>
+    </div>
+  </div>
   <button id="add-btn" class="icon-btn" aria-label="Adicionar livro" title="Adicionar livro">+</button>
 </header>
 
