@@ -1,16 +1,16 @@
 :root {
-  --bg: #1a1410;
-  --surface: #241c16;
-  --surface-2: #2f251d;
-  --text: #ede4d3;
-  --text-muted: #b3a189;
-  --accent: #c49b4a;
-  --accent-strong: #a67c2e;
-  --accent-ink: #241004;
-  --border: #3a2f24;
+  --bg: #121a22;
+  --surface: #1c2530;
+  --surface-2: #26313e;
+  --text: #e6ecf2;
+  --text-muted: #93a4b8;
+  --accent: #4a7ba8;
+  --accent-strong: #35597e;
+  --accent-ink: #0a141c;
+  --border: #2e3a48;
   --danger: #d17a70;
   --star: #d4af37;
-  --gold: #c49b4a;
+  --gold: #7fa8cc;
   --radius: 10px;
   --serif: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -18,29 +18,29 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f2e9d8;
-    --surface: #fffbf3;
-    --surface-2: #eadfc7;
-    --text: #2a1d14;
-    --text-muted: #6e5b46;
-    --accent: #7c2d3a;
-    --accent-strong: #5c1f29;
-    --accent-ink: #fdf6ea;
-    --border: #ddccaa;
+    --bg: #e8edf3;
+    --surface: #ffffff;
+    --surface-2: #dbe4ee;
+    --text: #16212b;
+    --text-muted: #55697d;
+    --accent: #3f6690;
+    --accent-strong: #2c4b69;
+    --accent-ink: #f4f8fc;
+    --border: #c4d1de;
     --danger: #a4342c;
     --star: #a67c2e;
-    --gold: #a67c2e;
+    --gold: #3f6690;
   }
 }
 
 /* Palette of "book spine" colors used to give each card a bit of shelf variety */
 :root {
-  --spine-1: #7c2d3a;
-  --spine-2: #2f4d3a;
-  --spine-3: #2c3e5c;
-  --spine-4: #8a5a2b;
-  --spine-5: #5c3a5c;
-  --spine-6: #3d5c52;
+  --spine-1: #3f6690;
+  --spine-2: #55738c;
+  --spine-3: #2c4560;
+  --spine-4: #4a6572;
+  --spine-5: #7089a3;
+  --spine-6: #34495e;
 }
 
 * { box-sizing: border-box; }
@@ -59,7 +59,7 @@ html, body {
 body {
   min-height: 100dvh;
   padding-bottom: 2rem;
-  background-image: radial-gradient(ellipse at top, rgba(196, 155, 74, 0.06), transparent 55%);
+  background-image: radial-gradient(ellipse at top, rgba(79, 130, 178, 0.08), transparent 55%);
 }
 
 .topbar {
