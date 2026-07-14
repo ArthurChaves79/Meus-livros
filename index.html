@@ -77,6 +77,16 @@
     </label>
 
     <label class="field">
+      <span>Capa <small>(se a busca automática não encontrar)</small></span>
+      <input type="file" id="cover-input" accept="image/*" />
+    </label>
+
+    <div id="cover-preview-wrap" class="cover-preview-wrap" hidden>
+      <img id="cover-preview" class="cover-preview" alt="" />
+      <button type="button" id="cover-remove-btn" class="ghost-btn">Remover capa</button>
+    </div>
+
+    <label class="field">
       <span>Localização na estante</span>
       <input type="text" id="localizacao" name="localizacao" autocomplete="off" placeholder="Ex: Estante 2, prateleira 3" />
     </label>

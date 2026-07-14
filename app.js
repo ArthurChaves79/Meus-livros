@@ -28,6 +28,10 @@ const bookIsbnInput = document.getElementById('book-isbn');
 const locationSuggestEl = document.getElementById('location-suggest');
 const locationSuggestText = document.getElementById('location-suggest-text');
 const locationSuggestBtn = document.getElementById('location-suggest-btn');
+const coverInput = document.getElementById('cover-input');
+const coverPreviewWrap = document.getElementById('cover-preview-wrap');
+const coverPreview = document.getElementById('cover-preview');
+const coverRemoveBtn = document.getElementById('cover-remove-btn');
 const statusSelect = document.getElementById('status');
 const ratingField = document.getElementById('rating-field');
 const starPicker = document.getElementById('star-picker');
@@ -64,6 +68,9 @@ let currentSearch = '';
 let currentLocation = null;
 let currentOnlyLoaned = false;
 
+// undefined = nada mudou nesta edição; null = capa removida; string = nova capa (data URL)
+let pendingCoverDataUrl;
+
 function loadBooks() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -87,6 +94,9 @@ function openDialog(book) {
   form.reset();
   setRating(0);
   locationSuggestEl.hidden = true;
+  pendingCoverDataUrl = undefined;
+  coverPreviewWrap.hidden = true;
+  coverPreview.src = '';
 
   if (book) {
     dialogTitle.textContent = 'Editar livro';
@@ -99,6 +109,10 @@ function openDialog(book) {
     statusSelect.value = book.status;
     setRating(book.nota || 0);
     deleteBtn.hidden = false;
+    if (book.capaCustom) {
+      coverPreview.src = book.capaCustom;
+      coverPreviewWrap.hidden = false;
+    }
   } else {
     dialogTitle.textContent = 'Adicionar livro';
     idInput.value = '';
@@ -128,9 +142,59 @@ function spineFor(titulo) {
 }
 
 function coverUrlFor(book) {
-  if (!book.isbn) return null;
-  return `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg?default=false`;
+  if (book.capaCustom) return book.capaCustom;
+  if (book.isbn) return `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg?default=false`;
+  return null;
 }
+
+function readAndCompressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Falha ao ler o arquivo'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Arquivo não é uma imagem válida'));
+      img.onload = () => {
+        const maxDim = 320;
+        let { width, height } = img;
+        if (width > height && width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else if (height >= width && height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+coverInput.addEventListener('change', async () => {
+  const file = coverInput.files[0];
+  if (!file) return;
+  try {
+    pendingCoverDataUrl = await readAndCompressImage(file);
+    coverPreview.src = pendingCoverDataUrl;
+    coverPreviewWrap.hidden = false;
+  } catch {
+    alert('Não foi possível usar essa imagem. Tente outra foto.');
+  } finally {
+    coverInput.value = '';
+  }
+});
+
+coverRemoveBtn.addEventListener('click', () => {
+  pendingCoverDataUrl = null;
+  coverPreview.src = '';
+  coverPreviewWrap.hidden = true;
+});
 
 function suggestLocationForAuthor(autor) {
   locationSuggestEl.hidden = true;
@@ -360,6 +424,9 @@ form.addEventListener('submit', (event) => {
     existing.autor = autorInput.value.trim();
     existing.localizacao = localizacao;
     existing.isbn = existing.isbn || isbn;
+    if (pendingCoverDataUrl !== undefined) {
+      existing.capaCustom = pendingCoverDataUrl;
+    }
     if (existing.status !== 'lido' && status === 'lido') {
       existing.lidoEm = now;
     }
@@ -382,6 +449,7 @@ form.addEventListener('submit', (event) => {
       autor: autorInput.value.trim(),
       localizacao,
       isbn,
+      capaCustom: pendingCoverDataUrl || null,
       status,
       nota,
       emprestadoPara,

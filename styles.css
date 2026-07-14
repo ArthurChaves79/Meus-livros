@@ -398,6 +398,21 @@ dialog::backdrop {
   color: var(--text);
 }
 
+.cover-preview-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: -0.5rem;
+}
+
+.cover-preview {
+  width: 3.4rem;
+  height: 5rem;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
 .location-suggest {
   display: flex;
   align-items: center;
