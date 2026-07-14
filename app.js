@@ -34,6 +34,8 @@ const coverPreview = document.getElementById('cover-preview');
 const coverRemoveBtn = document.getElementById('cover-remove-btn');
 const duplicateWarningEl = document.getElementById('duplicate-warning');
 const duplicateWarningText = document.getElementById('duplicate-warning-text');
+const generoInput = document.getElementById('genero');
+const edicaoInput = document.getElementById('edicao');
 const statusSelect = document.getElementById('status');
 const ratingField = document.getElementById('rating-field');
 const starPicker = document.getElementById('star-picker');
@@ -114,6 +116,8 @@ function openDialog(book) {
     bookIsbnInput.value = book.isbn || '';
     tituloInput.value = book.titulo;
     autorInput.value = book.autor || '';
+    generoInput.value = book.genero || '';
+    edicaoInput.value = book.edicao || '';
     localizacaoInput.value = book.localizacao || '';
     emprestadoInput.value = book.emprestadoPara || '';
     statusSelect.value = book.status;
@@ -303,14 +307,21 @@ function render() {
         b.titulo.toLowerCase().includes(search) ||
         (b.autor || '').toLowerCase().includes(search) ||
         (b.localizacao || '').toLowerCase().includes(search) ||
-        (b.emprestadoPara || '').toLowerCase().includes(search)
+        (b.emprestadoPara || '').toLowerCase().includes(search) ||
+        (b.genero || '').toLowerCase().includes(search) ||
+        (b.edicao || '').toLowerCase().includes(search)
       );
     })
-    .sort((a, b) =>
-      currentSort === 'recentes'
-        ? new Date(b.criadoEm) - new Date(a.criadoEm)
-        : a.titulo.localeCompare(b.titulo, 'pt-BR')
-    );
+    .sort((a, b) => {
+      if (currentSort === 'recentes') return new Date(b.criadoEm) - new Date(a.criadoEm);
+      if (currentSort === 'autor') {
+        return (
+          (a.autor || '').localeCompare(b.autor || '', 'pt-BR') ||
+          a.titulo.localeCompare(b.titulo, 'pt-BR')
+        );
+      }
+      return a.titulo.localeCompare(b.titulo, 'pt-BR');
+    });
 
   bookList.innerHTML = '';
   emptyState.hidden = books.length > 0;
@@ -361,7 +372,9 @@ function render() {
 
     const author = document.createElement('div');
     author.className = 'author';
-    author.textContent = book.autor || 'Autor desconhecido';
+    author.textContent = book.edicao
+      ? `${book.autor || 'Autor desconhecido'} · ${book.edicao}`
+      : book.autor || 'Autor desconhecido';
 
     const meta = document.createElement('div');
     meta.className = 'meta';
@@ -379,6 +392,13 @@ function render() {
     }
 
     info.append(title, author, meta);
+
+    if (book.genero) {
+      const genre = document.createElement('div');
+      genre.className = 'genre-tag';
+      genre.textContent = `🏷️ ${book.genero}`;
+      info.appendChild(genre);
+    }
 
     if (book.localizacao) {
       const loc = document.createElement('div');
@@ -462,6 +482,8 @@ form.addEventListener('submit', (event) => {
   const localizacao = localizacaoInput.value.trim() || null;
   const emprestadoPara = emprestadoInput.value.trim() || null;
   const isbn = bookIsbnInput.value.trim() || null;
+  const genero = generoInput.value.trim() || null;
+  const edicao = edicaoInput.value.trim() || null;
   const now = new Date().toISOString();
 
   if (id) {
@@ -469,6 +491,8 @@ form.addEventListener('submit', (event) => {
     existing.titulo = titulo;
     existing.autor = autorInput.value.trim();
     existing.localizacao = localizacao;
+    existing.genero = genero;
+    existing.edicao = edicao;
     existing.isbn = existing.isbn || isbn;
     if (pendingCoverDataUrl !== undefined) {
       existing.capaCustom = pendingCoverDataUrl;
@@ -494,6 +518,8 @@ form.addEventListener('submit', (event) => {
       titulo,
       autor: autorInput.value.trim(),
       localizacao,
+      genero,
+      edicao,
       isbn,
       capaCustom: pendingCoverDataUrl || null,
       status,
@@ -580,6 +606,12 @@ async function lookupIsbn(isbn) {
       tituloInput.value = info.title || '';
       autorInput.value = (info.authors || []).map((a) => a.name).join(', ');
       bookIsbnInput.value = isbn;
+      if (!generoInput.value.trim() && info.subjects) {
+        generoInput.value = info.subjects.slice(0, 3).map((s) => s.name).join(', ');
+      }
+      if (!edicaoInput.value.trim() && info.edition_name) {
+        edicaoInput.value = info.edition_name;
+      }
       suggestLocationForAuthor(autorInput.value);
       checkDuplicate();
     } else {

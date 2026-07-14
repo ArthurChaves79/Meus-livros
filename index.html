@@ -46,6 +46,7 @@
   <label for="sort-select">Ordenar por</label>
   <select id="sort-select">
     <option value="titulo">Título (A-Z)</option>
+    <option value="autor">Autor (A-Z)</option>
     <option value="recentes">Mais recentes primeiro</option>
   </select>
 </div>
@@ -94,6 +95,16 @@
     <div id="duplicate-warning" class="duplicate-warning" hidden>
       <span id="duplicate-warning-text"></span>
     </div>
+
+    <label class="field">
+      <span>Gênero / Categoria <small>(opcional)</small></span>
+      <input type="text" id="genero" name="genero" autocomplete="off" placeholder="Ex: Teologia, Apologética" />
+    </label>
+
+    <label class="field">
+      <span>Edição <small>(opcional)</small></span>
+      <input type="text" id="edicao" name="edicao" autocomplete="off" placeholder="Ex: 2ª edição" />
+    </label>
 
     <label class="field">
       <span>Capa <small>(se a busca automática não encontrar)</small></span>

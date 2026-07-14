@@ -389,6 +389,12 @@ main {
   color: var(--text-muted);
 }
 
+.genre-tag {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 .loan-tag {
   font-family: var(--sans);
   font-size: 0.75rem;
