@@ -34,7 +34,11 @@ const coverPreview = document.getElementById('cover-preview');
 const coverRemoveBtn = document.getElementById('cover-remove-btn');
 const duplicateWarningEl = document.getElementById('duplicate-warning');
 const duplicateWarningText = document.getElementById('duplicate-warning-text');
-const generoInput = document.getElementById('genero');
+const generoTagsEl = document.getElementById('genero-tags');
+const generoInputEl = document.getElementById('genero-input');
+const generoAddBtn = document.getElementById('genero-add-btn');
+const generoDatalist = document.getElementById('genero-datalist');
+const genreFiltersEl = document.getElementById('genre-filters');
 const edicaoInput = document.getElementById('edicao');
 const tipoSelect = document.getElementById('tipo');
 const livroFieldsEl = document.getElementById('livro-fields');
@@ -91,15 +95,23 @@ const backupReminderDismissBtn = document.getElementById('backup-reminder-dismis
 let currentFilter = 'todos';
 let currentSearch = '';
 let currentLocation = null;
+let currentGenre = null;
 let currentOnlyLoaned = false;
 let currentSort = 'titulo';
 
 // undefined = nada mudou nesta edição; null = capa removida; string = nova capa (data URL)
 let pendingCoverDataUrl;
+let pendingGeneros = [];
 
 function loadBooks() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const books = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    return books.map((b) => ({
+      ...b,
+      generos: Array.isArray(b.generos)
+        ? b.generos
+        : (b.genero ? b.genero.split(',').map((g) => g.trim()).filter(Boolean) : []),
+    }));
   } catch {
     return [];
   }
@@ -132,6 +144,9 @@ function openDialog(book) {
   pendingCoverDataUrl = undefined;
   coverPreviewWrap.hidden = true;
   coverPreview.src = '';
+  pendingGeneros = book ? [...(book.generos || [])] : [];
+  renderGeneroTags();
+  populateGeneroDatalist();
 
   if (book) {
     dialogTitle.textContent = book.tipo === 'artigo' ? 'Editar artigo' : 'Editar livro';
@@ -140,7 +155,6 @@ function openDialog(book) {
     tipoSelect.value = book.tipo || 'livro';
     tituloInput.value = book.titulo;
     autorInput.value = book.autor || '';
-    generoInput.value = book.genero || '';
     edicaoInput.value = book.edicao || '';
     editoraInput.value = book.editora || '';
     cidadeInput.value = book.cidade || '';
@@ -243,6 +257,64 @@ coverRemoveBtn.addEventListener('click', () => {
   pendingCoverDataUrl = null;
   coverPreview.src = '';
   coverPreviewWrap.hidden = true;
+});
+
+// --- Gêneros / categorias (tags) ---
+
+function renderGeneroTags() {
+  generoTagsEl.innerHTML = '';
+  for (const genero of pendingGeneros) {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    const label = document.createElement('span');
+    label.textContent = genero;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.setAttribute('aria-label', `Remover ${genero}`);
+    remove.textContent = '×';
+    remove.addEventListener('click', () => {
+      pendingGeneros = pendingGeneros.filter((g) => g !== genero);
+      renderGeneroTags();
+    });
+    chip.append(label, remove);
+    generoTagsEl.appendChild(chip);
+  }
+}
+
+function addGenero(value) {
+  const genero = value.trim();
+  if (!genero) return;
+  const exists = pendingGeneros.some((g) => g.toLowerCase() === genero.toLowerCase());
+  if (!exists) {
+    pendingGeneros.push(genero);
+    renderGeneroTags();
+  }
+  generoInputEl.value = '';
+}
+
+function populateGeneroDatalist() {
+  const seen = new Map(); // key: gênero em minúsculas -> primeira grafia usada
+  for (const book of loadBooks()) {
+    for (const g of book.generos || []) {
+      const key = g.toLowerCase();
+      if (!seen.has(key)) seen.set(key, g);
+    }
+  }
+  generoDatalist.innerHTML = '';
+  for (const g of [...seen.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'))) {
+    const option = document.createElement('option');
+    option.value = g;
+    generoDatalist.appendChild(option);
+  }
+}
+
+generoAddBtn.addEventListener('click', () => addGenero(generoInputEl.value));
+
+generoInputEl.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' || event.key === ',') {
+    event.preventDefault();
+    addGenero(generoInputEl.value);
+  }
 });
 
 function suggestLocationForAuthor(autor) {
@@ -437,15 +509,45 @@ function renderLocationFilters(allBooks) {
   loanToggleBtn.classList.toggle('active', currentOnlyLoaned);
 }
 
+function renderGenreFilters(allBooks) {
+  const counts = new Map(); // key: gênero em minúsculas -> { label, count }
+  for (const book of allBooks) {
+    for (const genero of book.generos || []) {
+      const key = genero.toLowerCase();
+      if (!counts.has(key)) counts.set(key, { label: genero, count: 0 });
+      counts.get(key).count++;
+    }
+  }
+
+  const entries = [...counts.values()].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  genreFiltersEl.innerHTML = '';
+  genreFiltersEl.hidden = entries.length === 0;
+
+  for (const { label, count } of entries) {
+    const active = !!currentGenre && currentGenre.toLowerCase() === label.toLowerCase();
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'location-chip' + (active ? ' active' : '');
+    chip.textContent = `🏷️ ${label} (${count})`;
+    chip.addEventListener('click', () => {
+      currentGenre = active ? null : label;
+      render();
+    });
+    genreFiltersEl.appendChild(chip);
+  }
+}
+
 function render() {
   const books = loadBooks();
   renderLocationFilters(books);
+  renderGenreFilters(books);
   updateBackupReminder(books);
 
   const search = currentSearch.trim().toLowerCase();
   const visible = books
     .filter((b) => currentFilter === 'todos' || b.status === currentFilter)
     .filter((b) => !currentLocation || b.localizacao === currentLocation)
+    .filter((b) => !currentGenre || (b.generos || []).some((g) => g.toLowerCase() === currentGenre.toLowerCase()))
     .filter((b) => !currentOnlyLoaned || b.emprestadoPara)
     .filter((b) => {
       if (!search) return true;
@@ -454,7 +556,7 @@ function render() {
         (b.autor || '').toLowerCase().includes(search) ||
         (b.localizacao || '').toLowerCase().includes(search) ||
         (b.emprestadoPara || '').toLowerCase().includes(search) ||
-        (b.genero || '').toLowerCase().includes(search) ||
+        (b.generos || []).some((g) => g.toLowerCase().includes(search)) ||
         (b.edicao || '').toLowerCase().includes(search) ||
         (b.revista || '').toLowerCase().includes(search) ||
         (b.doi || '').toLowerCase().includes(search)
@@ -549,11 +651,16 @@ function render() {
 
     info.append(title, author, meta);
 
-    if (book.genero) {
-      const genre = document.createElement('div');
-      genre.className = 'genre-tag';
-      genre.textContent = `🏷️ ${book.genero}`;
-      info.appendChild(genre);
+    if (book.generos && book.generos.length > 0) {
+      const genres = document.createElement('div');
+      genres.className = 'genre-tags';
+      for (const genero of book.generos) {
+        const tag = document.createElement('span');
+        tag.className = 'genre-tag';
+        tag.textContent = `🏷️ ${genero}`;
+        genres.appendChild(tag);
+      }
+      info.appendChild(genres);
     }
 
     if (book.localizacao) {
@@ -638,7 +745,8 @@ form.addEventListener('submit', (event) => {
   const localizacao = localizacaoInput.value.trim() || null;
   const emprestadoPara = emprestadoInput.value.trim() || null;
   const isbn = bookIsbnInput.value.trim() || null;
-  const genero = generoInput.value.trim() || null;
+  if (generoInputEl.value.trim()) addGenero(generoInputEl.value);
+  const generos = [...pendingGeneros];
   const edicao = edicaoInput.value.trim() || null;
   const tipo = tipoSelect.value;
   const editora = editoraInput.value.trim() || null;
@@ -656,7 +764,8 @@ form.addEventListener('submit', (event) => {
     existing.titulo = titulo;
     existing.autor = autorInput.value.trim();
     existing.localizacao = localizacao;
-    existing.genero = genero;
+    existing.generos = generos;
+    delete existing.genero;
     existing.edicao = edicao;
     existing.tipo = tipo;
     existing.editora = editora;
@@ -692,7 +801,7 @@ form.addEventListener('submit', (event) => {
       titulo,
       autor: autorInput.value.trim(),
       localizacao,
-      genero,
+      generos,
       edicao,
       tipo,
       editora,
@@ -789,8 +898,8 @@ async function lookupIsbn(isbn) {
       tituloInput.value = info.title || '';
       autorInput.value = (info.authors || []).map((a) => a.name).join(', ');
       bookIsbnInput.value = isbn;
-      if (!generoInput.value.trim() && info.subjects) {
-        generoInput.value = info.subjects.slice(0, 3).map((s) => s.name).join(', ');
+      if (pendingGeneros.length === 0 && info.subjects) {
+        for (const s of info.subjects.slice(0, 3)) addGenero(s.name);
       }
       if (!edicaoInput.value.trim() && info.edition_name) {
         edicaoInput.value = info.edition_name;

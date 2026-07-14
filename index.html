@@ -52,6 +52,7 @@
 </div>
 
 <div id="location-filters" class="location-filters" hidden></div>
+<div id="genre-filters" class="location-filters" hidden></div>
 
 <main>
   <div id="backup-reminder" class="backup-reminder" hidden>
@@ -106,10 +107,15 @@
       <span id="duplicate-warning-text"></span>
     </div>
 
-    <label class="field">
-      <span>Gênero / Categoria / Área <small>(opcional)</small></span>
-      <input type="text" id="genero" name="genero" autocomplete="off" placeholder="Ex: Teologia, Apologética" />
-    </label>
+    <div class="field">
+      <span>Gêneros / Categorias / Áreas <small>(opcional, pode adicionar mais de um)</small></span>
+      <div id="genero-tags" class="tag-list"></div>
+      <div class="tag-input-row">
+        <input type="text" id="genero-input" autocomplete="off" list="genero-datalist" placeholder="Ex: Teologia" />
+        <button type="button" id="genero-add-btn" class="ghost-btn">Adicionar</button>
+      </div>
+      <datalist id="genero-datalist"></datalist>
+    </div>
 
     <div id="livro-fields-2">
       <label class="field">
