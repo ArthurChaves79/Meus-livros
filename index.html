@@ -42,9 +42,24 @@
   <button type="button" id="loan-toggle-btn" class="location-chip loan-toggle" hidden>📤 Emprestados</button>
 </div>
 
+<div class="sort-wrap">
+  <label for="sort-select">Ordenar por</label>
+  <select id="sort-select">
+    <option value="titulo">Título (A-Z)</option>
+    <option value="recentes">Mais recentes primeiro</option>
+  </select>
+</div>
+
 <div id="location-filters" class="location-filters" hidden></div>
 
 <main>
+  <div id="backup-reminder" class="backup-reminder" hidden>
+    <span>📦 Já faz um tempo desde o último backup. Que tal exportar agora?</span>
+    <div class="backup-reminder-actions">
+      <button type="button" id="backup-reminder-export-btn" class="ghost-btn">Exportar</button>
+      <button type="button" id="backup-reminder-dismiss-btn" class="ghost-btn">Depois</button>
+    </div>
+  </div>
   <div id="empty-state" class="empty-state" hidden>
     <p>Você ainda não tem livros por aqui.</p>
     <button id="empty-add-btn" class="primary-btn">Adicionar meu primeiro livro</button>
@@ -75,6 +90,10 @@
       <span>Autor</span>
       <input type="text" id="autor" name="autor" autocomplete="off" placeholder="Opcional" />
     </label>
+
+    <div id="duplicate-warning" class="duplicate-warning" hidden>
+      <span id="duplicate-warning-text"></span>
+    </div>
 
     <label class="field">
       <span>Capa <small>(se a busca automática não encontrar)</small></span>

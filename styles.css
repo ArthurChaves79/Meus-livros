@@ -199,6 +199,28 @@ body {
   font-weight: 600;
 }
 
+.sort-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem 0;
+  max-width: 640px;
+  margin: 0 auto;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.sort-wrap select {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
 .location-filters {
   display: flex;
   gap: 0.5rem;
@@ -232,6 +254,28 @@ main {
   padding: 0 1rem;
   max-width: 640px;
   margin: 0 auto;
+}
+
+.backup-reminder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--surface-2);
+  border: 1px dashed var(--gold);
+  border-radius: var(--radius);
+  padding: 0.8rem 0.9rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.backup-reminder-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.backup-reminder-actions .ghost-btn {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.78rem;
 }
 
 .empty-state {
@@ -431,6 +475,16 @@ dialog::backdrop {
   flex: none;
   padding: 0.3rem 0.7rem;
   font-size: 0.75rem;
+}
+
+.duplicate-warning {
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px dashed var(--danger);
+  font-size: 0.8rem;
+  color: var(--text);
+  margin-top: -0.5rem;
 }
 
 .rating-field {

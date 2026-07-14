@@ -32,6 +32,8 @@ const coverInput = document.getElementById('cover-input');
 const coverPreviewWrap = document.getElementById('cover-preview-wrap');
 const coverPreview = document.getElementById('cover-preview');
 const coverRemoveBtn = document.getElementById('cover-remove-btn');
+const duplicateWarningEl = document.getElementById('duplicate-warning');
+const duplicateWarningText = document.getElementById('duplicate-warning-text');
 const statusSelect = document.getElementById('status');
 const ratingField = document.getElementById('rating-field');
 const starPicker = document.getElementById('star-picker');
@@ -63,10 +65,17 @@ const statsDialog = document.getElementById('stats-dialog');
 const statsCloseBtn = document.getElementById('stats-close-btn');
 const statsGrid = document.getElementById('stats-grid');
 
+const sortSelect = document.getElementById('sort-select');
+
+const backupReminderEl = document.getElementById('backup-reminder');
+const backupReminderExportBtn = document.getElementById('backup-reminder-export-btn');
+const backupReminderDismissBtn = document.getElementById('backup-reminder-dismiss-btn');
+
 let currentFilter = 'todos';
 let currentSearch = '';
 let currentLocation = null;
 let currentOnlyLoaned = false;
+let currentSort = 'titulo';
 
 // undefined = nada mudou nesta edição; null = capa removida; string = nova capa (data URL)
 let pendingCoverDataUrl;
@@ -94,6 +103,7 @@ function openDialog(book) {
   form.reset();
   setRating(0);
   locationSuggestEl.hidden = true;
+  duplicateWarningEl.hidden = true;
   pendingCoverDataUrl = undefined;
   coverPreviewWrap.hidden = true;
   coverPreview.src = '';
@@ -218,6 +228,32 @@ locationSuggestBtn.addEventListener('click', () => {
   locationSuggestEl.hidden = true;
 });
 
+function checkDuplicate() {
+  duplicateWarningEl.hidden = true;
+  if (idInput.value) return; // não avisa ao editar o próprio livro
+
+  const titulo = tituloInput.value.trim();
+  const autor = autorInput.value.trim();
+  const isbn = bookIsbnInput.value.trim();
+  if (!titulo && !isbn) return;
+
+  const books = loadBooks();
+  const match = books.find((b) => {
+    if (isbn && b.isbn && b.isbn === isbn) return true;
+    if (!titulo) return false;
+    const mesmoTitulo = b.titulo.trim().toLowerCase() === titulo.toLowerCase();
+    const mesmoAutor = !autor || !b.autor || b.autor.trim().toLowerCase() === autor.toLowerCase();
+    return mesmoTitulo && mesmoAutor;
+  });
+  if (!match) return;
+
+  duplicateWarningText.textContent = `⚠️ Você já tem "${match.titulo}" cadastrado (${STATUS_LABEL[match.status]}). Salvar mesmo assim vai criar um segundo registro.`;
+  duplicateWarningEl.hidden = false;
+}
+
+tituloInput.addEventListener('input', checkDuplicate);
+autorInput.addEventListener('input', checkDuplicate);
+
 autorInput.addEventListener('input', () => {
   suggestLocationForAuthor(autorInput.value);
 });
@@ -254,6 +290,7 @@ function renderLocationFilters(allBooks) {
 function render() {
   const books = loadBooks();
   renderLocationFilters(books);
+  updateBackupReminder(books);
 
   const search = currentSearch.trim().toLowerCase();
   const visible = books
@@ -269,7 +306,11 @@ function render() {
         (b.emprestadoPara || '').toLowerCase().includes(search)
       );
     })
-    .sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR'));
+    .sort((a, b) =>
+      currentSort === 'recentes'
+        ? new Date(b.criadoEm) - new Date(a.criadoEm)
+        : a.titulo.localeCompare(b.titulo, 'pt-BR')
+    );
 
   bookList.innerHTML = '';
   emptyState.hidden = books.length > 0;
@@ -387,6 +428,11 @@ searchInput.addEventListener('input', () => {
 
 loanToggleBtn.addEventListener('click', () => {
   currentOnlyLoaned = !currentOnlyLoaned;
+  render();
+});
+
+sortSelect.addEventListener('change', () => {
+  currentSort = sortSelect.value;
   render();
 });
 
@@ -535,6 +581,7 @@ async function lookupIsbn(isbn) {
       autorInput.value = (info.authors || []).map((a) => a.name).join(', ');
       bookIsbnInput.value = isbn;
       suggestLocationForAuthor(autorInput.value);
+      checkDuplicate();
     } else {
       tituloInput.value = '';
       alert('Não encontramos esse livro automaticamente. Preencha os dados manualmente.');
@@ -561,13 +608,37 @@ isbnLookupBtn.addEventListener('click', () => {
 
 // --- Backup (exportar / importar) ---
 
-backupBtn.addEventListener('click', () => backupDialog.showModal());
-backupCloseBtn.addEventListener('click', () => backupDialog.close());
-backupDialog.addEventListener('click', (event) => {
-  if (event.target === backupDialog) backupDialog.close();
-});
+const LAST_BACKUP_KEY = 'meusLivros.lastBackupAt';
+const BACKUP_SNOOZE_KEY = 'meusLivros.backupSnoozedUntil';
+const BACKUP_REMINDER_DAYS = 14;
+const BACKUP_SNOOZE_DAYS = 7;
 
-exportBtn.addEventListener('click', () => {
+function markBackedUpNow() {
+  localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString());
+  localStorage.removeItem(BACKUP_SNOOZE_KEY);
+}
+
+function updateBackupReminder(books) {
+  if (books.length === 0) {
+    backupReminderEl.hidden = true;
+    return;
+  }
+
+  const snoozedUntil = localStorage.getItem(BACKUP_SNOOZE_KEY);
+  if (snoozedUntil && new Date(snoozedUntil) > new Date()) {
+    backupReminderEl.hidden = true;
+    return;
+  }
+
+  const lastBackupAt = localStorage.getItem(LAST_BACKUP_KEY);
+  const shouldRemind = lastBackupAt
+    ? (Date.now() - new Date(lastBackupAt).getTime()) / (1000 * 60 * 60 * 24) >= BACKUP_REMINDER_DAYS
+    : books.length >= 3;
+
+  backupReminderEl.hidden = !shouldRemind;
+}
+
+function exportBackup() {
   const books = loadBooks();
   const blob = new Blob([JSON.stringify(books, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -579,6 +650,18 @@ exportBtn.addEventListener('click', () => {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  markBackedUpNow();
+}
+
+backupBtn.addEventListener('click', () => backupDialog.showModal());
+backupCloseBtn.addEventListener('click', () => backupDialog.close());
+backupDialog.addEventListener('click', (event) => {
+  if (event.target === backupDialog) backupDialog.close();
+});
+
+exportBtn.addEventListener('click', () => {
+  exportBackup();
+  render();
 });
 
 importInput.addEventListener('change', async () => {
@@ -603,6 +686,7 @@ importInput.addEventListener('change', async () => {
     }
 
     saveBooks(current);
+    markBackedUpNow();
     render();
     backupDialog.close();
     alert(added > 0
@@ -613,6 +697,17 @@ importInput.addEventListener('change', async () => {
   } finally {
     importInput.value = '';
   }
+});
+
+backupReminderExportBtn.addEventListener('click', () => {
+  exportBackup();
+  render();
+});
+
+backupReminderDismissBtn.addEventListener('click', () => {
+  const snoozeUntil = new Date(Date.now() + BACKUP_SNOOZE_DAYS * 24 * 60 * 60 * 1000);
+  localStorage.setItem(BACKUP_SNOOZE_KEY, snoozeUntil.toISOString());
+  backupReminderEl.hidden = true;
 });
 
 // --- Estatísticas ---
