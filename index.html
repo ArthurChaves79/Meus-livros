@@ -23,7 +23,10 @@
       <p class="tagline">uma pequena biblioteca pessoal</p>
     </div>
   </div>
-  <button id="add-btn" class="icon-btn" aria-label="Adicionar livro" title="Adicionar livro">+</button>
+  <div class="header-actions">
+    <button id="backup-btn" class="icon-btn ghost-icon-btn" aria-label="Backup" title="Backup">💾</button>
+    <button id="add-btn" class="icon-btn" aria-label="Adicionar livro" title="Adicionar livro">+</button>
+  </div>
 </header>
 
 <nav class="tabs" role="tablist" aria-label="Filtrar por status">
@@ -104,6 +107,27 @@
       <button type="submit" id="save-btn" class="primary-btn">Salvar</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="backup-dialog">
+  <div class="backup-wrap">
+    <h2>Backup dos seus livros</h2>
+    <p>
+      Os livros ficam salvos só neste navegador/aparelho. Exporte um arquivo de vez em
+      quando e guarde num lugar seguro (e-mail, Drive, iCloud) — assim você não perde
+      nada se reinstalar o app ou trocar de celular.
+    </p>
+    <div class="backup-actions">
+      <button type="button" id="export-btn" class="primary-btn">⬇️ Exportar backup (.json)</button>
+      <label class="ghost-btn backup-import-label">
+        ⬆️ Importar backup (.json)
+        <input type="file" id="import-input" accept="application/json,.json" hidden />
+      </label>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" id="backup-close-btn" class="ghost-btn">Fechar</button>
+    </div>
+  </div>
 </dialog>
 
 <dialog id="scan-dialog">

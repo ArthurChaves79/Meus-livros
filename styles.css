@@ -123,6 +123,24 @@ body {
   background: var(--accent-strong);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: none;
+}
+
+.ghost-icon-btn {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  font-size: 1.15rem;
+}
+
+.ghost-icon-btn:active {
+  background: var(--surface-2);
+}
+
 .tabs {
   display: flex;
   gap: 1.25rem;
@@ -443,4 +461,35 @@ dialog::backdrop {
   margin: 0;
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+
+.backup-wrap {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.backup-wrap h2 {
+  font-family: var(--serif);
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.backup-wrap p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.backup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.backup-import-label {
+  text-align: center;
+  display: block;
 }

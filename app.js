@@ -41,6 +41,12 @@ const scanHint = document.getElementById('scan-hint');
 const isbnInput = document.getElementById('isbn-input');
 const isbnLookupBtn = document.getElementById('isbn-lookup-btn');
 
+const backupBtn = document.getElementById('backup-btn');
+const backupDialog = document.getElementById('backup-dialog');
+const backupCloseBtn = document.getElementById('backup-close-btn');
+const exportBtn = document.getElementById('export-btn');
+const importInput = document.getElementById('import-input');
+
 let currentFilter = 'todos';
 let currentSearch = '';
 let currentLocation = null;
@@ -373,6 +379,62 @@ isbnLookupBtn.addEventListener('click', () => {
     return;
   }
   lookupIsbn(isbn);
+});
+
+// --- Backup (exportar / importar) ---
+
+backupBtn.addEventListener('click', () => backupDialog.showModal());
+backupCloseBtn.addEventListener('click', () => backupDialog.close());
+backupDialog.addEventListener('click', (event) => {
+  if (event.target === backupDialog) backupDialog.close();
+});
+
+exportBtn.addEventListener('click', () => {
+  const books = loadBooks();
+  const blob = new Blob([JSON.stringify(books, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const date = new Date().toISOString().slice(0, 10);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `meus-livros-backup-${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+importInput.addEventListener('change', async () => {
+  const file = importInput.files[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const imported = JSON.parse(text);
+    if (!Array.isArray(imported)) throw new Error('formato inválido');
+
+    const current = loadBooks();
+    const currentIds = new Set(current.map((b) => b.id));
+    let added = 0;
+
+    for (const book of imported) {
+      if (book && typeof book.id === 'string' && typeof book.titulo === 'string' && !currentIds.has(book.id)) {
+        current.push(book);
+        currentIds.add(book.id);
+        added++;
+      }
+    }
+
+    saveBooks(current);
+    render();
+    backupDialog.close();
+    alert(added > 0
+      ? `Backup importado: ${added} livro(s) adicionados.`
+      : 'Nenhum livro novo encontrado nesse backup (já estavam todos cadastrados).');
+  } catch {
+    alert('Não foi possível importar esse arquivo. Verifique se é um backup válido do Meus Livros.');
+  } finally {
+    importInput.value = '';
+  }
 });
 
 render();
