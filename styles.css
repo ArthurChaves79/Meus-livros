@@ -448,6 +448,48 @@ dialog::backdrop {
   color: var(--text);
 }
 
+#livro-fields,
+#livro-fields-2,
+#livro-fields-3,
+#artigo-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.field-row {
+  display: flex;
+  gap: 0.7rem;
+}
+
+.field-row .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.reference-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+}
+
+.reference-text {
+  font-family: var(--serif);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 0 0 0.6rem;
+  white-space: pre-wrap;
+}
+
 .cover-preview-wrap {
   display: flex;
   align-items: center;

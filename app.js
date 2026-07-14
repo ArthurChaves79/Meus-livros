@@ -36,6 +36,21 @@ const duplicateWarningEl = document.getElementById('duplicate-warning');
 const duplicateWarningText = document.getElementById('duplicate-warning-text');
 const generoInput = document.getElementById('genero');
 const edicaoInput = document.getElementById('edicao');
+const tipoSelect = document.getElementById('tipo');
+const livroFieldsEl = document.getElementById('livro-fields');
+const livroFields2El = document.getElementById('livro-fields-2');
+const livroFields3El = document.getElementById('livro-fields-3');
+const artigoFieldsEl = document.getElementById('artigo-fields');
+const editoraInput = document.getElementById('editora');
+const cidadeInput = document.getElementById('cidade');
+const anoInput = document.getElementById('ano');
+const revistaInput = document.getElementById('revista');
+const volumeInput = document.getElementById('volume');
+const numeroInput = document.getElementById('numero');
+const paginasInput = document.getElementById('paginas');
+const doiInput = document.getElementById('doi');
+const referencePreview = document.getElementById('reference-preview');
+const referenceCopyBtn = document.getElementById('reference-copy-btn');
 const statusSelect = document.getElementById('status');
 const ratingField = document.getElementById('rating-field');
 const starPicker = document.getElementById('star-picker');
@@ -101,6 +116,14 @@ function setRating(value) {
   });
 }
 
+function updateTipoVisibility() {
+  const isArtigo = tipoSelect.value === 'artigo';
+  livroFieldsEl.hidden = isArtigo;
+  livroFields2El.hidden = isArtigo;
+  livroFields3El.hidden = isArtigo;
+  artigoFieldsEl.hidden = !isArtigo;
+}
+
 function openDialog(book) {
   form.reset();
   setRating(0);
@@ -111,13 +134,22 @@ function openDialog(book) {
   coverPreview.src = '';
 
   if (book) {
-    dialogTitle.textContent = 'Editar livro';
+    dialogTitle.textContent = book.tipo === 'artigo' ? 'Editar artigo' : 'Editar livro';
     idInput.value = book.id;
     bookIsbnInput.value = book.isbn || '';
+    tipoSelect.value = book.tipo || 'livro';
     tituloInput.value = book.titulo;
     autorInput.value = book.autor || '';
     generoInput.value = book.genero || '';
     edicaoInput.value = book.edicao || '';
+    editoraInput.value = book.editora || '';
+    cidadeInput.value = book.cidade || '';
+    anoInput.value = book.ano || '';
+    revistaInput.value = book.revista || '';
+    volumeInput.value = book.volume || '';
+    numeroInput.value = book.numero || '';
+    paginasInput.value = book.paginas || '';
+    doiInput.value = book.doi || '';
     localizacaoInput.value = book.localizacao || '';
     emprestadoInput.value = book.emprestadoPara || '';
     statusSelect.value = book.status;
@@ -131,13 +163,16 @@ function openDialog(book) {
     dialogTitle.textContent = 'Adicionar livro';
     idInput.value = '';
     bookIsbnInput.value = '';
+    tipoSelect.value = 'livro';
     localizacaoInput.value = '';
     emprestadoInput.value = '';
     statusSelect.value = 'quero ler';
     deleteBtn.hidden = true;
   }
 
+  updateTipoVisibility();
   ratingField.hidden = statusSelect.value !== 'lido';
+  updateReferencePreview();
   dialog.showModal();
   tituloInput.focus();
 }
@@ -239,11 +274,13 @@ function checkDuplicate() {
   const titulo = tituloInput.value.trim();
   const autor = autorInput.value.trim();
   const isbn = bookIsbnInput.value.trim();
-  if (!titulo && !isbn) return;
+  const doi = doiInput.value.trim();
+  if (!titulo && !isbn && !doi) return;
 
   const books = loadBooks();
   const match = books.find((b) => {
     if (isbn && b.isbn && b.isbn === isbn) return true;
+    if (doi && b.doi && b.doi === doi) return true;
     if (!titulo) return false;
     const mesmoTitulo = b.titulo.trim().toLowerCase() === titulo.toLowerCase();
     const mesmoAutor = !autor || !b.autor || b.autor.trim().toLowerCase() === autor.toLowerCase();
@@ -257,6 +294,115 @@ function checkDuplicate() {
 
 tituloInput.addEventListener('input', checkDuplicate);
 autorInput.addEventListener('input', checkDuplicate);
+
+// --- Referência bibliográfica (ABNT) ---
+
+function invertName(fullName) {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return fullName.toUpperCase();
+  const surname = parts[parts.length - 1];
+  const rest = parts.slice(0, -1).join(' ');
+  return `${surname.toUpperCase()}, ${rest}`;
+}
+
+function formatAuthorsABNT(autorRaw) {
+  if (!autorRaw) return '';
+  return autorRaw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map(invertName)
+    .join('; ');
+}
+
+function generateReference() {
+  const titulo = tituloInput.value.trim();
+  if (!titulo) return '';
+
+  const autor = formatAuthorsABNT(autorInput.value.trim());
+  const ano = anoInput.value.trim();
+
+  if (tipoSelect.value === 'artigo') {
+    const revista = revistaInput.value.trim();
+    const volume = volumeInput.value.trim();
+    const numero = numeroInput.value.trim();
+    const paginas = paginasInput.value.trim();
+    const doi = doiInput.value.trim();
+
+    const parts = [];
+    if (autor) parts.push(`${autor}.`);
+    parts.push(`${titulo}.`);
+
+    if (revista) {
+      let periodico = revista;
+      const details = [];
+      if (volume) details.push(`v. ${volume}`);
+      if (numero) details.push(`n. ${numero}`);
+      if (paginas) details.push(`p. ${paginas}`);
+      if (details.length) periodico += `, ${details.join(', ')}`;
+      if (ano) periodico += `, ${ano}`;
+      parts.push(`${periodico}.`);
+    } else if (ano) {
+      parts.push(`${ano}.`);
+    }
+
+    let text = parts.join(' ');
+    if (doi) text += ` DOI: ${doi}.`;
+    return text;
+  }
+
+  const edicao = edicaoInput.value.trim();
+  const cidade = cidadeInput.value.trim();
+  const editora = editoraInput.value.trim();
+
+  const parts = [];
+  if (autor) parts.push(`${autor}.`);
+  parts.push(`${titulo}.`);
+  if (edicao) parts.push(`${edicao}.`);
+
+  let localEditora = '';
+  if (cidade && editora) localEditora = `${cidade}: ${editora}`;
+  else localEditora = cidade || editora;
+
+  if (localEditora && ano) parts.push(`${localEditora}, ${ano}.`);
+  else if (localEditora) parts.push(`${localEditora}.`);
+  else if (ano) parts.push(`${ano}.`);
+
+  return parts.join(' ');
+}
+
+function updateReferencePreview() {
+  const text = generateReference();
+  referencePreview.textContent = text || 'Preencha os dados para ver a referência.';
+}
+
+[
+  tituloInput, autorInput, anoInput, edicaoInput, cidadeInput, editoraInput,
+  revistaInput, volumeInput, numeroInput, paginasInput, doiInput,
+].forEach((el) => el.addEventListener('input', updateReferencePreview));
+
+tipoSelect.addEventListener('change', () => {
+  updateTipoVisibility();
+  updateReferencePreview();
+});
+
+referenceCopyBtn.addEventListener('click', async () => {
+  const text = generateReference();
+  if (!text) {
+    alert('Preencha ao menos o título para gerar a referência.');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    const original = referenceCopyBtn.textContent;
+    referenceCopyBtn.textContent = '✅ Copiado!';
+    setTimeout(() => {
+      referenceCopyBtn.textContent = original;
+    }, 1500);
+  } catch {
+    alert('Não foi possível copiar automaticamente. Selecione o texto acima e copie manualmente.');
+  }
+});
 
 autorInput.addEventListener('input', () => {
   suggestLocationForAuthor(autorInput.value);
@@ -309,7 +455,9 @@ function render() {
         (b.localizacao || '').toLowerCase().includes(search) ||
         (b.emprestadoPara || '').toLowerCase().includes(search) ||
         (b.genero || '').toLowerCase().includes(search) ||
-        (b.edicao || '').toLowerCase().includes(search)
+        (b.edicao || '').toLowerCase().includes(search) ||
+        (b.revista || '').toLowerCase().includes(search) ||
+        (b.doi || '').toLowerCase().includes(search)
       );
     })
     .sort((a, b) => {
@@ -340,6 +488,7 @@ function render() {
     li.dataset.id = book.id;
     li.style.setProperty('--spine', spineFor(book.titulo));
 
+    const fallbackIcon = book.tipo === 'artigo' ? '📄' : '📖';
     const cover = document.createElement('div');
     cover.className = 'book-cover';
     const coverUrl = coverUrlFor(book);
@@ -352,14 +501,14 @@ function render() {
         img.remove();
         const fallback = document.createElement('span');
         fallback.className = 'cover-fallback';
-        fallback.textContent = '📖';
+        fallback.textContent = fallbackIcon;
         cover.appendChild(fallback);
       });
       cover.appendChild(img);
     } else {
       const fallback = document.createElement('span');
       fallback.className = 'cover-fallback';
-      fallback.textContent = '📖';
+      fallback.textContent = fallbackIcon;
       cover.appendChild(fallback);
     }
 
@@ -378,6 +527,13 @@ function render() {
 
     const meta = document.createElement('div');
     meta.className = 'meta';
+
+    if (book.tipo === 'artigo') {
+      const tipoBadge = document.createElement('span');
+      tipoBadge.className = 'badge';
+      tipoBadge.textContent = '📄 Artigo';
+      meta.appendChild(tipoBadge);
+    }
 
     const badge = document.createElement('span');
     badge.className = `badge ${STATUS_CLASS[book.status]}`;
@@ -484,6 +640,15 @@ form.addEventListener('submit', (event) => {
   const isbn = bookIsbnInput.value.trim() || null;
   const genero = generoInput.value.trim() || null;
   const edicao = edicaoInput.value.trim() || null;
+  const tipo = tipoSelect.value;
+  const editora = editoraInput.value.trim() || null;
+  const cidade = cidadeInput.value.trim() || null;
+  const ano = anoInput.value.trim() || null;
+  const revista = revistaInput.value.trim() || null;
+  const volume = volumeInput.value.trim() || null;
+  const numero = numeroInput.value.trim() || null;
+  const paginas = paginasInput.value.trim() || null;
+  const doi = doiInput.value.trim() || null;
   const now = new Date().toISOString();
 
   if (id) {
@@ -493,6 +658,15 @@ form.addEventListener('submit', (event) => {
     existing.localizacao = localizacao;
     existing.genero = genero;
     existing.edicao = edicao;
+    existing.tipo = tipo;
+    existing.editora = editora;
+    existing.cidade = cidade;
+    existing.ano = ano;
+    existing.revista = revista;
+    existing.volume = volume;
+    existing.numero = numero;
+    existing.paginas = paginas;
+    existing.doi = doi;
     existing.isbn = existing.isbn || isbn;
     if (pendingCoverDataUrl !== undefined) {
       existing.capaCustom = pendingCoverDataUrl;
@@ -520,6 +694,15 @@ form.addEventListener('submit', (event) => {
       localizacao,
       genero,
       edicao,
+      tipo,
+      editora,
+      cidade,
+      ano,
+      revista,
+      volume,
+      numero,
+      paginas,
+      doi,
       isbn,
       capaCustom: pendingCoverDataUrl || null,
       status,
@@ -612,7 +795,18 @@ async function lookupIsbn(isbn) {
       if (!edicaoInput.value.trim() && info.edition_name) {
         edicaoInput.value = info.edition_name;
       }
+      if (!editoraInput.value.trim() && info.publishers && info.publishers[0]) {
+        editoraInput.value = info.publishers[0].name || '';
+      }
+      if (!cidadeInput.value.trim() && info.publish_places && info.publish_places[0]) {
+        cidadeInput.value = info.publish_places[0].name || '';
+      }
+      if (!anoInput.value.trim() && info.publish_date) {
+        const anoMatch = info.publish_date.match(/\d{4}/);
+        if (anoMatch) anoInput.value = anoMatch[0];
+      }
       suggestLocationForAuthor(autorInput.value);
+      updateReferencePreview();
       checkDuplicate();
     } else {
       tituloInput.value = '';

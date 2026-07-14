@@ -72,15 +72,25 @@
   <form id="book-form" method="dialog">
     <h2 id="dialog-title">Adicionar livro</h2>
 
-    <button type="button" id="scan-btn" class="ghost-btn scan-btn">📷 Escanear código de barras (ISBN)</button>
-
     <label class="field">
-      <span>Ou digite o ISBN</span>
-      <div class="isbn-row">
-        <input type="text" id="isbn-input" inputmode="numeric" autocomplete="off" placeholder="Ex: 9788535914849" />
-        <button type="button" id="isbn-lookup-btn" class="ghost-btn">Buscar</button>
-      </div>
+      <span>Tipo</span>
+      <select id="tipo">
+        <option value="livro">📚 Livro</option>
+        <option value="artigo">📄 Artigo científico</option>
+      </select>
     </label>
+
+    <div id="livro-fields">
+      <button type="button" id="scan-btn" class="ghost-btn scan-btn">📷 Escanear código de barras (ISBN)</button>
+
+      <label class="field">
+        <span>Ou digite o ISBN</span>
+        <div class="isbn-row">
+          <input type="text" id="isbn-input" inputmode="numeric" autocomplete="off" placeholder="Ex: 9788535914849" />
+          <button type="button" id="isbn-lookup-btn" class="ghost-btn">Buscar</button>
+        </div>
+      </label>
+    </div>
 
     <label class="field">
       <span>Título</span>
@@ -97,39 +107,86 @@
     </div>
 
     <label class="field">
-      <span>Gênero / Categoria <small>(opcional)</small></span>
+      <span>Gênero / Categoria / Área <small>(opcional)</small></span>
       <input type="text" id="genero" name="genero" autocomplete="off" placeholder="Ex: Teologia, Apologética" />
     </label>
 
-    <label class="field">
-      <span>Edição <small>(opcional)</small></span>
-      <input type="text" id="edicao" name="edicao" autocomplete="off" placeholder="Ex: 2ª edição" />
-    </label>
+    <div id="livro-fields-2">
+      <label class="field">
+        <span>Edição <small>(opcional)</small></span>
+        <input type="text" id="edicao" name="edicao" autocomplete="off" placeholder="Ex: 2ª edição" />
+      </label>
 
-    <label class="field">
-      <span>Capa <small>(se a busca automática não encontrar)</small></span>
-      <input type="file" id="cover-input" accept="image/*" />
-    </label>
+      <label class="field">
+        <span>Editora <small>(opcional)</small></span>
+        <input type="text" id="editora" name="editora" autocomplete="off" placeholder="Ex: Vida Nova" />
+      </label>
 
-    <div id="cover-preview-wrap" class="cover-preview-wrap" hidden>
-      <img id="cover-preview" class="cover-preview" alt="" />
-      <button type="button" id="cover-remove-btn" class="ghost-btn">Remover capa</button>
+      <label class="field">
+        <span>Cidade de publicação <small>(opcional)</small></span>
+        <input type="text" id="cidade" name="cidade" autocomplete="off" placeholder="Ex: São Paulo" />
+      </label>
+    </div>
+
+    <div id="artigo-fields" hidden>
+      <label class="field">
+        <span>Revista / Periódico <small>(opcional)</small></span>
+        <input type="text" id="revista" name="revista" autocomplete="off" placeholder="Ex: Revista Fides Reformata" />
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Volume</span>
+          <input type="text" id="volume" name="volume" autocomplete="off" placeholder="Ex: 12" />
+        </label>
+        <label class="field">
+          <span>Número</span>
+          <input type="text" id="numero" name="numero" autocomplete="off" placeholder="Ex: 2" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Páginas <small>(opcional)</small></span>
+        <input type="text" id="paginas" name="paginas" autocomplete="off" placeholder="Ex: 45-67" />
+      </label>
+
+      <label class="field">
+        <span>DOI <small>(opcional)</small></span>
+        <input type="text" id="doi" name="doi" autocomplete="off" placeholder="Ex: 10.1234/exemplo" />
+      </label>
     </div>
 
     <label class="field">
-      <span>Localização na estante</span>
-      <input type="text" id="localizacao" name="localizacao" autocomplete="off" placeholder="Ex: Estante 2, prateleira 3" />
+      <span>Ano de publicação <small>(opcional)</small></span>
+      <input type="text" id="ano" name="ano" inputmode="numeric" autocomplete="off" placeholder="Ex: 2020" />
     </label>
 
-    <div id="location-suggest" class="location-suggest" hidden>
-      <span id="location-suggest-text"></span>
-      <button type="button" id="location-suggest-btn" class="ghost-btn">Usar</button>
+    <div id="livro-fields-3">
+      <label class="field">
+        <span>Capa <small>(se a busca automática não encontrar)</small></span>
+        <input type="file" id="cover-input" accept="image/*" />
+      </label>
+
+      <div id="cover-preview-wrap" class="cover-preview-wrap" hidden>
+        <img id="cover-preview" class="cover-preview" alt="" />
+        <button type="button" id="cover-remove-btn" class="ghost-btn">Remover capa</button>
+      </div>
+
+      <label class="field">
+        <span>Localização na estante</span>
+        <input type="text" id="localizacao" name="localizacao" autocomplete="off" placeholder="Ex: Estante 2, prateleira 3" />
+      </label>
+
+      <div id="location-suggest" class="location-suggest" hidden>
+        <span id="location-suggest-text"></span>
+        <button type="button" id="location-suggest-btn" class="ghost-btn">Usar</button>
+      </div>
+
+      <label class="field">
+        <span>Emprestado para <small>(opcional)</small></span>
+        <input type="text" id="emprestado" name="emprestado" autocomplete="off" placeholder="Nome de quem pegou emprestado" />
+      </label>
     </div>
-
-    <label class="field">
-      <span>Emprestado para <small>(opcional)</small></span>
-      <input type="text" id="emprestado" name="emprestado" autocomplete="off" placeholder="Nome de quem pegou emprestado" />
-    </label>
 
     <label class="field">
       <span>Status</span>
@@ -150,6 +207,12 @@
         <button type="button" class="star" data-value="5" aria-label="5 estrelas">★</button>
       </div>
     </fieldset>
+
+    <div class="reference-box">
+      <span class="field-label">Referência (ABNT)</span>
+      <p id="reference-preview" class="reference-text">Preencha os dados para ver a referência.</p>
+      <button type="button" id="reference-copy-btn" class="ghost-btn">📋 Copiar referência</button>
+    </div>
 
     <input type="hidden" id="book-id" name="id" />
     <input type="hidden" id="book-isbn" name="isbn" />
