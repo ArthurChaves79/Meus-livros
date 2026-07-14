@@ -24,6 +24,7 @@
     </div>
   </div>
   <div class="header-actions">
+    <button id="stats-btn" class="icon-btn ghost-icon-btn" aria-label="Estatísticas" title="Estatísticas">📊</button>
     <button id="backup-btn" class="icon-btn ghost-icon-btn" aria-label="Backup" title="Backup">💾</button>
     <button id="add-btn" class="icon-btn" aria-label="Adicionar livro" title="Adicionar livro">+</button>
   </div>
@@ -38,6 +39,7 @@
 
 <div class="search-wrap">
   <input type="search" id="search-input" placeholder="Buscar por título, autor ou localização" autocomplete="off" />
+  <button type="button" id="loan-toggle-btn" class="location-chip loan-toggle" hidden>📤 Emprestados</button>
 </div>
 
 <div id="location-filters" class="location-filters" hidden></div>
@@ -79,6 +81,16 @@
       <input type="text" id="localizacao" name="localizacao" autocomplete="off" placeholder="Ex: Estante 2, prateleira 3" />
     </label>
 
+    <div id="location-suggest" class="location-suggest" hidden>
+      <span id="location-suggest-text"></span>
+      <button type="button" id="location-suggest-btn" class="ghost-btn">Usar</button>
+    </div>
+
+    <label class="field">
+      <span>Emprestado para <small>(opcional)</small></span>
+      <input type="text" id="emprestado" name="emprestado" autocomplete="off" placeholder="Nome de quem pegou emprestado" />
+    </label>
+
     <label class="field">
       <span>Status</span>
       <select id="status" name="status">
@@ -100,6 +112,7 @@
     </fieldset>
 
     <input type="hidden" id="book-id" name="id" />
+    <input type="hidden" id="book-isbn" name="isbn" />
 
     <div class="dialog-actions">
       <button type="button" id="cancel-btn" class="ghost-btn">Cancelar</button>
@@ -107,6 +120,16 @@
       <button type="submit" id="save-btn" class="primary-btn">Salvar</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="stats-dialog">
+  <div class="stats-wrap">
+    <h2>Estatísticas de leitura</h2>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="dialog-actions">
+      <button type="button" id="stats-close-btn" class="ghost-btn">Fechar</button>
+    </div>
+  </div>
 </dialog>
 
 <dialog id="backup-dialog">

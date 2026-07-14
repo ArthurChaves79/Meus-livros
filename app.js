@@ -23,6 +23,11 @@ const dialogTitle = document.getElementById('dialog-title');
 const tituloInput = document.getElementById('titulo');
 const autorInput = document.getElementById('autor');
 const localizacaoInput = document.getElementById('localizacao');
+const emprestadoInput = document.getElementById('emprestado');
+const bookIsbnInput = document.getElementById('book-isbn');
+const locationSuggestEl = document.getElementById('location-suggest');
+const locationSuggestText = document.getElementById('location-suggest-text');
+const locationSuggestBtn = document.getElementById('location-suggest-btn');
 const statusSelect = document.getElementById('status');
 const ratingField = document.getElementById('rating-field');
 const starPicker = document.getElementById('star-picker');
@@ -47,9 +52,17 @@ const backupCloseBtn = document.getElementById('backup-close-btn');
 const exportBtn = document.getElementById('export-btn');
 const importInput = document.getElementById('import-input');
 
+const loanToggleBtn = document.getElementById('loan-toggle-btn');
+
+const statsBtn = document.getElementById('stats-btn');
+const statsDialog = document.getElementById('stats-dialog');
+const statsCloseBtn = document.getElementById('stats-close-btn');
+const statsGrid = document.getElementById('stats-grid');
+
 let currentFilter = 'todos';
 let currentSearch = '';
 let currentLocation = null;
+let currentOnlyLoaned = false;
 
 function loadBooks() {
   try {
@@ -73,20 +86,25 @@ function setRating(value) {
 function openDialog(book) {
   form.reset();
   setRating(0);
+  locationSuggestEl.hidden = true;
 
   if (book) {
     dialogTitle.textContent = 'Editar livro';
     idInput.value = book.id;
+    bookIsbnInput.value = book.isbn || '';
     tituloInput.value = book.titulo;
     autorInput.value = book.autor || '';
     localizacaoInput.value = book.localizacao || '';
+    emprestadoInput.value = book.emprestadoPara || '';
     statusSelect.value = book.status;
     setRating(book.nota || 0);
     deleteBtn.hidden = false;
   } else {
     dialogTitle.textContent = 'Adicionar livro';
     idInput.value = '';
+    bookIsbnInput.value = '';
     localizacaoInput.value = '';
+    emprestadoInput.value = '';
     statusSelect.value = 'quero ler';
     deleteBtn.hidden = true;
   }
@@ -108,6 +126,37 @@ function spineFor(titulo) {
   }
   return `var(--spine-${(hash % SPINE_COUNT) + 1})`;
 }
+
+function coverUrlFor(book) {
+  if (!book.isbn) return null;
+  return `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg?default=false`;
+}
+
+function suggestLocationForAuthor(autor) {
+  locationSuggestEl.hidden = true;
+  if (idInput.value) return; // só sugere para livro novo, não ao editar
+  if (!autor) return;
+  if (localizacaoInput.value.trim()) return; // já preenchido, não atrapalha
+
+  const books = loadBooks();
+  const match = books.find(
+    (b) => b.localizacao && b.autor && b.autor.trim().toLowerCase() === autor.trim().toLowerCase()
+  );
+  if (!match) return;
+
+  locationSuggestText.textContent = `💡 "${match.titulo}", do mesmo autor, está em "${match.localizacao}".`;
+  locationSuggestEl.dataset.location = match.localizacao;
+  locationSuggestEl.hidden = false;
+}
+
+locationSuggestBtn.addEventListener('click', () => {
+  localizacaoInput.value = locationSuggestEl.dataset.location || '';
+  locationSuggestEl.hidden = true;
+});
+
+autorInput.addEventListener('input', () => {
+  suggestLocationForAuthor(autorInput.value);
+});
 
 function renderLocationFilters(allBooks) {
   const counts = new Map();
@@ -131,6 +180,11 @@ function renderLocationFilters(allBooks) {
     });
     locationFiltersEl.appendChild(chip);
   }
+
+  const loanedCount = allBooks.filter((b) => b.emprestadoPara).length;
+  loanToggleBtn.hidden = loanedCount === 0 && !currentOnlyLoaned;
+  loanToggleBtn.textContent = `📤 Emprestados (${loanedCount})`;
+  loanToggleBtn.classList.toggle('active', currentOnlyLoaned);
 }
 
 function render() {
@@ -141,12 +195,14 @@ function render() {
   const visible = books
     .filter((b) => currentFilter === 'todos' || b.status === currentFilter)
     .filter((b) => !currentLocation || b.localizacao === currentLocation)
+    .filter((b) => !currentOnlyLoaned || b.emprestadoPara)
     .filter((b) => {
       if (!search) return true;
       return (
         b.titulo.toLowerCase().includes(search) ||
         (b.autor || '').toLowerCase().includes(search) ||
-        (b.localizacao || '').toLowerCase().includes(search)
+        (b.localizacao || '').toLowerCase().includes(search) ||
+        (b.emprestadoPara || '').toLowerCase().includes(search)
       );
     })
     .sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR'));
@@ -167,6 +223,32 @@ function render() {
     li.className = 'book-card';
     li.dataset.id = book.id;
     li.style.setProperty('--spine', spineFor(book.titulo));
+
+    const cover = document.createElement('div');
+    cover.className = 'book-cover';
+    const coverUrl = coverUrlFor(book);
+    if (coverUrl) {
+      const img = document.createElement('img');
+      img.src = coverUrl;
+      img.alt = '';
+      img.loading = 'lazy';
+      img.addEventListener('error', () => {
+        img.remove();
+        const fallback = document.createElement('span');
+        fallback.className = 'cover-fallback';
+        fallback.textContent = '📖';
+        cover.appendChild(fallback);
+      });
+      cover.appendChild(img);
+    } else {
+      const fallback = document.createElement('span');
+      fallback.className = 'cover-fallback';
+      fallback.textContent = '📖';
+      cover.appendChild(fallback);
+    }
+
+    const info = document.createElement('div');
+    info.className = 'book-info';
 
     const title = document.createElement('div');
     title.className = 'title';
@@ -191,15 +273,23 @@ function render() {
       meta.appendChild(starsEl);
     }
 
-    li.append(title, author, meta);
+    info.append(title, author, meta);
 
     if (book.localizacao) {
       const loc = document.createElement('div');
       loc.className = 'location-tag';
       loc.textContent = `📍 ${book.localizacao}`;
-      li.appendChild(loc);
+      info.appendChild(loc);
     }
 
+    if (book.emprestadoPara) {
+      const loan = document.createElement('div');
+      loan.className = 'loan-tag';
+      loan.textContent = `📤 Emprestado para ${book.emprestadoPara}`;
+      info.appendChild(loan);
+    }
+
+    li.append(cover, info);
     li.addEventListener('click', () => openDialog(book));
     bookList.appendChild(li);
   }
@@ -231,6 +321,11 @@ searchInput.addEventListener('input', () => {
   render();
 });
 
+loanToggleBtn.addEventListener('click', () => {
+  currentOnlyLoaned = !currentOnlyLoaned;
+  render();
+});
+
 addBtn.addEventListener('click', () => openDialog(null));
 emptyAddBtn.addEventListener('click', () => openDialog(null));
 cancelBtn.addEventListener('click', closeDialog);
@@ -255,6 +350,8 @@ form.addEventListener('submit', (event) => {
   const status = statusSelect.value;
   const nota = status === 'lido' ? Number(starPicker.dataset.value) || null : null;
   const localizacao = localizacaoInput.value.trim() || null;
+  const emprestadoPara = emprestadoInput.value.trim() || null;
+  const isbn = bookIsbnInput.value.trim() || null;
   const now = new Date().toISOString();
 
   if (id) {
@@ -262,6 +359,7 @@ form.addEventListener('submit', (event) => {
     existing.titulo = titulo;
     existing.autor = autorInput.value.trim();
     existing.localizacao = localizacao;
+    existing.isbn = existing.isbn || isbn;
     if (existing.status !== 'lido' && status === 'lido') {
       existing.lidoEm = now;
     }
@@ -270,14 +368,24 @@ form.addEventListener('submit', (event) => {
     }
     existing.status = status;
     existing.nota = nota;
+    if (emprestadoPara && !existing.emprestadoPara) {
+      existing.emprestadoEm = now;
+    }
+    if (!emprestadoPara) {
+      existing.emprestadoEm = null;
+    }
+    existing.emprestadoPara = emprestadoPara;
   } else {
     books.push({
       id: crypto.randomUUID(),
       titulo,
       autor: autorInput.value.trim(),
       localizacao,
+      isbn,
       status,
       nota,
+      emprestadoPara,
+      emprestadoEm: emprestadoPara ? now : null,
       criadoEm: now,
       lidoEm: status === 'lido' ? now : null,
     });
@@ -357,6 +465,8 @@ async function lookupIsbn(isbn) {
     if (info) {
       tituloInput.value = info.title || '';
       autorInput.value = (info.authors || []).map((a) => a.name).join(', ');
+      bookIsbnInput.value = isbn;
+      suggestLocationForAuthor(autorInput.value);
     } else {
       tituloInput.value = '';
       alert('Não encontramos esse livro automaticamente. Preencha os dados manualmente.');
@@ -435,6 +545,83 @@ importInput.addEventListener('change', async () => {
   } finally {
     importInput.value = '';
   }
+});
+
+// --- Estatísticas ---
+
+function computeStats(books) {
+  const total = books.length;
+  const lidos = books.filter((b) => b.status === 'lido');
+  const thisYear = new Date().getFullYear();
+  const lidosEsteAno = lidos.filter((b) => b.lidoEm && new Date(b.lidoEm).getFullYear() === thisYear).length;
+  const emprestados = books.filter((b) => b.emprestadoPara).length;
+
+  const authorCounts = new Map();
+  for (const b of books) {
+    const autor = (b.autor || '').trim();
+    if (!autor) continue;
+    authorCounts.set(autor, (authorCounts.get(autor) || 0) + 1);
+  }
+  let autorTop = '—';
+  let autorTopCount = 0;
+  for (const [autor, count] of authorCounts) {
+    if (count > autorTopCount) {
+      autorTop = autor;
+      autorTopCount = count;
+    }
+  }
+
+  const notas = lidos.map((b) => b.nota).filter((n) => typeof n === 'number' && n > 0);
+  const notaMedia = notas.length ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(1) : '—';
+
+  return {
+    total,
+    lidosTotal: lidos.length,
+    lidosEsteAno,
+    emprestados,
+    autorTop,
+    autorTopCount,
+    notaMedia,
+  };
+}
+
+function statItem(value, label, wide) {
+  const div = document.createElement('div');
+  div.className = 'stat-item' + (wide ? ' stat-wide' : '');
+  const v = document.createElement('div');
+  v.className = 'stat-value';
+  v.textContent = value;
+  const l = document.createElement('div');
+  l.className = 'stat-label';
+  l.textContent = label;
+  div.append(v, l);
+  return div;
+}
+
+function renderStats() {
+  const stats = computeStats(loadBooks());
+  statsGrid.innerHTML = '';
+  statsGrid.append(
+    statItem(stats.total, 'Livros na estante'),
+    statItem(stats.lidosTotal, 'Lidos no total'),
+    statItem(stats.lidosEsteAno, `Lidos em ${new Date().getFullYear()}`),
+    statItem(stats.emprestados, 'Emprestados agora'),
+    statItem(stats.notaMedia, 'Nota média'),
+    statItem(
+      stats.autorTopCount > 0 ? `${stats.autorTop} (${stats.autorTopCount})` : '—',
+      'Autor mais presente',
+      true
+    )
+  );
+}
+
+statsBtn.addEventListener('click', () => {
+  renderStats();
+  statsDialog.showModal();
+});
+statsCloseBtn.addEventListener('click', () => statsDialog.close());
+statsDialog.addEventListener('click', (event) => {
+  if (event.target === statsDialog) statsDialog.close();
 });
 
 render();
