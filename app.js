@@ -62,6 +62,14 @@ const editoraInput = document.getElementById('editora');
 const cidadeInput = document.getElementById('cidade');
 const anoInput = document.getElementById('ano');
 const valorInput = document.getElementById('valor');
+const colecaoInput = document.getElementById('colecao');
+const colecaoNumeroInput = document.getElementById('colecao-numero');
+const colecaoDatalist = document.getElementById('colecao-datalist');
+const possuidoCheckbox = document.getElementById('possuido');
+const colecoesBtn = document.getElementById('colecoes-btn');
+const colecoesDialog = document.getElementById('colecoes-dialog');
+const colecoesListEl = document.getElementById('colecoes-list');
+const colecoesCloseBtn = document.getElementById('colecoes-close-btn');
 const revistaInput = document.getElementById('revista');
 const volumeInput = document.getElementById('volume');
 const numeroInput = document.getElementById('numero');
@@ -127,6 +135,7 @@ function loadBooks() {
         ? b.generos
         : (b.genero ? b.genero.split(',').map((g) => g.trim()).filter(Boolean) : []),
       formato: b.formato || 'fisico',
+      possuido: b.possuido !== false,
     }));
   } catch {
     return [];
@@ -183,6 +192,7 @@ function openDialog(book) {
   pendingGeneros = book ? [...(book.generos || [])] : [];
   renderGeneroTags();
   populateGeneroDatalist();
+  populateColecaoDatalist();
 
   if (book) {
     dialogTitle.textContent = book.tipo === 'artigo' ? 'Editar artigo' : 'Editar livro';
@@ -191,6 +201,9 @@ function openDialog(book) {
     tipoSelect.value = book.tipo || 'livro';
     tituloInput.value = book.titulo;
     autorInput.value = book.autor || '';
+    colecaoInput.value = book.colecao || '';
+    colecaoNumeroInput.value = book.colecaoNumero || '';
+    possuidoCheckbox.checked = book.possuido !== false;
     edicaoInput.value = book.edicao || '';
     editoraInput.value = book.editora || '';
     cidadeInput.value = book.cidade || '';
@@ -217,6 +230,9 @@ function openDialog(book) {
     idInput.value = '';
     bookIsbnInput.value = '';
     tipoSelect.value = 'livro';
+    colecaoInput.value = '';
+    colecaoNumeroInput.value = '';
+    possuidoCheckbox.checked = true;
     formatoSelect.value = 'fisico';
     localizacaoInput.value = '';
     linkDigitalInput.value = '';
@@ -358,6 +374,21 @@ generoInputEl.addEventListener('keydown', (event) => {
     addGenero(generoInputEl.value);
   }
 });
+
+function populateColecaoDatalist() {
+  const seen = new Map();
+  for (const book of loadBooks()) {
+    if (!book.colecao) continue;
+    const key = book.colecao.toLowerCase();
+    if (!seen.has(key)) seen.set(key, book.colecao);
+  }
+  colecaoDatalist.innerHTML = '';
+  for (const nome of [...seen.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'))) {
+    const option = document.createElement('option');
+    option.value = nome;
+    colecaoDatalist.appendChild(option);
+  }
+}
 
 function suggestLocationForAuthor(autor) {
   locationSuggestEl.hidden = true;
@@ -613,7 +644,7 @@ function renderFormatoFilters(allBooks) {
 }
 
 function render() {
-  const books = loadBooks();
+  const books = loadBooks().filter((b) => b.possuido !== false);
   renderLocationFilters(books);
   renderGenreFilters(books);
   renderFormatoFilters(books);
@@ -634,6 +665,7 @@ function render() {
         (b.localizacao || '').toLowerCase().includes(search) ||
         (b.emprestadoPara || '').toLowerCase().includes(search) ||
         (b.generos || []).some((g) => g.toLowerCase().includes(search)) ||
+        (b.colecao || '').toLowerCase().includes(search) ||
         (b.edicao || '').toLowerCase().includes(search) ||
         (b.revista || '').toLowerCase().includes(search) ||
         (b.doi || '').toLowerCase().includes(search)
@@ -735,6 +767,15 @@ function render() {
 
     info.append(title, author, meta);
 
+    if (book.colecao) {
+      const colecao = document.createElement('div');
+      colecao.className = 'colecao-tag';
+      colecao.textContent = book.colecaoNumero
+        ? `📚 ${book.colecao} #${book.colecaoNumero}`
+        : `📚 ${book.colecao}`;
+      info.appendChild(colecao);
+    }
+
     if (book.generos && book.generos.length > 0) {
       const genres = document.createElement('div');
       genres.className = 'genre-tags';
@@ -777,6 +818,89 @@ function render() {
     bookList.appendChild(li);
   }
 }
+
+function renderColecoes() {
+  const groups = new Map(); // nome em minúsculas -> { label, items }
+  for (const book of loadBooks()) {
+    if (!book.colecao) continue;
+    const key = book.colecao.toLowerCase();
+    if (!groups.has(key)) groups.set(key, { label: book.colecao, items: [] });
+    groups.get(key).items.push(book);
+  }
+
+  colecoesListEl.innerHTML = '';
+
+  if (groups.size === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'empty-state';
+    empty.textContent = 'Nenhuma coleção cadastrada ainda. Ao adicionar um livro, preencha o campo "Coleção / Série" para agrupar os volumes aqui.';
+    colecoesListEl.appendChild(empty);
+    return;
+  }
+
+  const sortedGroups = [...groups.values()].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+
+  for (const group of sortedGroups) {
+    const items = [...group.items].sort((a, b) => {
+      const na = parseFloat(a.colecaoNumero);
+      const nb = parseFloat(b.colecaoNumero);
+      const aValid = !Number.isNaN(na);
+      const bValid = !Number.isNaN(nb);
+      if (aValid && bValid && na !== nb) return na - nb;
+      if (aValid !== bValid) return aValid ? -1 : 1;
+      return (
+        (a.colecaoNumero || '').localeCompare(b.colecaoNumero || '', 'pt-BR') ||
+        a.titulo.localeCompare(b.titulo, 'pt-BR')
+      );
+    });
+
+    const ownedCount = items.filter((b) => b.possuido !== false).length;
+
+    const groupEl = document.createElement('div');
+    groupEl.className = 'colecao-group';
+
+    const header = document.createElement('div');
+    header.className = 'colecao-header';
+    const title = document.createElement('span');
+    title.textContent = group.label;
+    const progress = document.createElement('span');
+    progress.className = 'colecao-progress';
+    progress.textContent = `${ownedCount} de ${items.length}`;
+    header.append(title, progress);
+    groupEl.appendChild(header);
+
+    const itemsEl = document.createElement('div');
+    itemsEl.className = 'colecao-items';
+    for (const book of items) {
+      const owned = book.possuido !== false;
+      const itemBtn = document.createElement('button');
+      itemBtn.type = 'button';
+      itemBtn.className = 'colecao-item' + (owned ? '' : ' missing');
+      const num = document.createElement('span');
+      num.className = 'colecao-item-num';
+      num.textContent = book.colecaoNumero || '—';
+      const label = document.createElement('span');
+      label.textContent = `${owned ? '✅' : '⬜'} ${book.titulo}`;
+      itemBtn.append(num, label);
+      itemBtn.addEventListener('click', () => {
+        colecoesDialog.close();
+        openDialog(book);
+      });
+      itemsEl.appendChild(itemBtn);
+    }
+    groupEl.appendChild(itemsEl);
+    colecoesListEl.appendChild(groupEl);
+  }
+}
+
+colecoesBtn.addEventListener('click', () => {
+  renderColecoes();
+  colecoesDialog.showModal();
+});
+colecoesCloseBtn.addEventListener('click', () => colecoesDialog.close());
+colecoesDialog.addEventListener('click', (event) => {
+  if (event.target === colecoesDialog) colecoesDialog.close();
+});
 
 statusSelect.addEventListener('change', () => {
   ratingField.hidden = statusSelect.value !== 'lido';
@@ -850,6 +974,9 @@ form.addEventListener('submit', (event) => {
   const cidade = cidadeInput.value.trim() || null;
   const ano = anoInput.value.trim() || null;
   const valor = valorInput.value.trim() !== '' ? Number(valorInput.value) : null;
+  const colecao = colecaoInput.value.trim() || null;
+  const colecaoNumero = colecaoNumeroInput.value.trim() || null;
+  const possuido = possuidoCheckbox.checked;
   const revista = revistaInput.value.trim() || null;
   const volume = volumeInput.value.trim() || null;
   const numero = numeroInput.value.trim() || null;
@@ -872,6 +999,9 @@ form.addEventListener('submit', (event) => {
     existing.cidade = cidade;
     existing.ano = ano;
     existing.valor = valor;
+    existing.colecao = colecao;
+    existing.colecaoNumero = colecaoNumero;
+    existing.possuido = possuido;
     existing.revista = revista;
     existing.volume = volume;
     existing.numero = numero;
@@ -911,6 +1041,9 @@ form.addEventListener('submit', (event) => {
       cidade,
       ano,
       valor,
+      colecao,
+      colecaoNumero,
+      possuido,
       revista,
       volume,
       numero,
@@ -1212,7 +1345,7 @@ function statItem(value, label, wide) {
 }
 
 function renderStats() {
-  const stats = computeStats(loadBooks());
+  const stats = computeStats(loadBooks().filter((b) => b.possuido !== false));
   statsGrid.innerHTML = '';
   statsGrid.append(
     statItem(stats.total, 'Livros na estante'),

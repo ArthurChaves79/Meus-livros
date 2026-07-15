@@ -24,6 +24,7 @@
     </div>
   </div>
   <div class="header-actions">
+    <button id="colecoes-btn" class="icon-btn ghost-icon-btn" aria-label="Coleções" title="Coleções">📚</button>
     <button id="stats-btn" class="icon-btn ghost-icon-btn" aria-label="Estatísticas" title="Estatísticas">📊</button>
     <button id="backup-btn" class="icon-btn ghost-icon-btn" aria-label="Backup" title="Backup">💾</button>
     <button id="add-btn" class="icon-btn" aria-label="Adicionar livro" title="Adicionar livro">+</button>
@@ -119,6 +120,23 @@
     </div>
 
     <div id="livro-fields-2">
+      <div class="field-row">
+        <label class="field">
+          <span>Coleção / Série <small>(opcional)</small></span>
+          <input type="text" id="colecao" name="colecao" autocomplete="off" list="colecao-datalist" placeholder="Ex: O Senhor dos Anéis" />
+        </label>
+        <label class="field narrow">
+          <span>Número</span>
+          <input type="text" id="colecao-numero" name="colecao-numero" autocomplete="off" placeholder="Ex: 1" />
+        </label>
+      </div>
+      <datalist id="colecao-datalist"></datalist>
+
+      <label class="checkbox-field">
+        <input type="checkbox" id="possuido" checked />
+        <span>Já tenho este exemplar <small>(desmarque para indicar que falta na coleção)</small></span>
+      </label>
+
       <label class="field">
         <span>Edição <small>(opcional)</small></span>
         <input type="text" id="edicao" name="edicao" autocomplete="off" placeholder="Ex: 2ª edição" />
@@ -257,6 +275,16 @@
       <button type="submit" id="save-btn" class="primary-btn">Salvar</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="colecoes-dialog">
+  <div class="colecoes-wrap">
+    <h2>Coleções</h2>
+    <div id="colecoes-list" class="colecoes-list"></div>
+    <div class="dialog-actions">
+      <button type="button" id="colecoes-close-btn" class="ghost-btn">Fechar</button>
+    </div>
+  </div>
 </dialog>
 
 <dialog id="stats-dialog">
