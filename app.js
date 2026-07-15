@@ -12,6 +12,13 @@ const STATUS_CLASS = {
   lido: 'lido',
 };
 
+const FORMATO_LABEL = {
+  fisico: '📚 Físico',
+  'kindle-proprio': '📱 Kindle (comprado)',
+  'kindle-unlimited': '📱 Kindle Unlimited',
+  logos: '💻 Logos Bible',
+};
+
 const bookList = document.getElementById('book-list');
 const emptyState = document.getElementById('empty-state');
 const tabs = document.querySelectorAll('.tab');
@@ -22,6 +29,12 @@ const form = document.getElementById('book-form');
 const dialogTitle = document.getElementById('dialog-title');
 const tituloInput = document.getElementById('titulo');
 const autorInput = document.getElementById('autor');
+const formatoSelect = document.getElementById('formato');
+const locationGroupEl = document.getElementById('location-group');
+const digitalLinkGroupEl = document.getElementById('digital-link-group');
+const linkDigitalInput = document.getElementById('link-digital');
+const linkDigitalOpenBtn = document.getElementById('link-digital-open-btn');
+const formatoFiltersEl = document.getElementById('formato-filters');
 const localizacaoInput = document.getElementById('localizacao');
 const emprestadoInput = document.getElementById('emprestado');
 const bookIsbnInput = document.getElementById('book-isbn');
@@ -96,6 +109,7 @@ let currentFilter = 'todos';
 let currentSearch = '';
 let currentLocation = null;
 let currentGenre = null;
+let currentFormato = null;
 let currentOnlyLoaned = false;
 let currentSort = 'titulo';
 
@@ -111,6 +125,7 @@ function loadBooks() {
       generos: Array.isArray(b.generos)
         ? b.generos
         : (b.genero ? b.genero.split(',').map((g) => g.trim()).filter(Boolean) : []),
+      formato: b.formato || 'fisico',
     }));
   } catch {
     return [];
@@ -135,6 +150,26 @@ function updateTipoVisibility() {
   livroFields3El.hidden = isArtigo;
   artigoFieldsEl.hidden = !isArtigo;
 }
+
+function updateFormatoVisibility() {
+  const isFisico = formatoSelect.value === 'fisico';
+  locationGroupEl.hidden = !isFisico;
+  digitalLinkGroupEl.hidden = isFisico;
+}
+
+formatoSelect.addEventListener('change', () => {
+  updateFormatoVisibility();
+  updateReferencePreview();
+});
+
+linkDigitalOpenBtn.addEventListener('click', () => {
+  const url = linkDigitalInput.value.trim();
+  if (!url) {
+    alert('Cole o link do livro no campo acima antes de abrir.');
+    return;
+  }
+  window.open(url, '_blank', 'noopener');
+});
 
 function openDialog(book) {
   form.reset();
@@ -164,7 +199,9 @@ function openDialog(book) {
     numeroInput.value = book.numero || '';
     paginasInput.value = book.paginas || '';
     doiInput.value = book.doi || '';
+    formatoSelect.value = book.formato || 'fisico';
     localizacaoInput.value = book.localizacao || '';
+    linkDigitalInput.value = book.linkDigital || '';
     emprestadoInput.value = book.emprestadoPara || '';
     statusSelect.value = book.status;
     setRating(book.nota || 0);
@@ -178,13 +215,16 @@ function openDialog(book) {
     idInput.value = '';
     bookIsbnInput.value = '';
     tipoSelect.value = 'livro';
+    formatoSelect.value = 'fisico';
     localizacaoInput.value = '';
+    linkDigitalInput.value = '';
     emprestadoInput.value = '';
     statusSelect.value = 'quero ler';
     deleteBtn.hidden = true;
   }
 
   updateTipoVisibility();
+  updateFormatoVisibility();
   ratingField.hidden = statusSelect.value !== 'lido';
   updateReferencePreview();
   dialog.showModal();
@@ -440,6 +480,12 @@ function generateReference() {
   else if (localEditora) parts.push(`${localEditora}.`);
   else if (ano) parts.push(`${ano}.`);
 
+  if (formatoSelect.value === 'kindle-proprio' || formatoSelect.value === 'kindle-unlimited') {
+    parts.push('E-book (Kindle).');
+  } else if (formatoSelect.value === 'logos') {
+    parts.push('Recurso eletrônico (Logos Bible Software).');
+  }
+
   return parts.join(' ');
 }
 
@@ -537,10 +583,38 @@ function renderGenreFilters(allBooks) {
   }
 }
 
+function renderFormatoFilters(allBooks) {
+  const counts = new Map();
+  for (const book of allBooks) {
+    if (book.tipo === 'artigo') continue;
+    const formato = book.formato || 'fisico';
+    counts.set(formato, (counts.get(formato) || 0) + 1);
+  }
+
+  const formatoOrder = ['fisico', 'kindle-proprio', 'kindle-unlimited', 'logos'];
+  formatoFiltersEl.innerHTML = '';
+  formatoFiltersEl.hidden = counts.size <= 1;
+
+  for (const formato of formatoOrder) {
+    if (!counts.has(formato)) continue;
+    const active = currentFormato === formato;
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'location-chip' + (active ? ' active' : '');
+    chip.textContent = `${FORMATO_LABEL[formato]} (${counts.get(formato)})`;
+    chip.addEventListener('click', () => {
+      currentFormato = active ? null : formato;
+      render();
+    });
+    formatoFiltersEl.appendChild(chip);
+  }
+}
+
 function render() {
   const books = loadBooks();
   renderLocationFilters(books);
   renderGenreFilters(books);
+  renderFormatoFilters(books);
   updateBackupReminder(books);
 
   const search = currentSearch.trim().toLowerCase();
@@ -548,6 +622,7 @@ function render() {
     .filter((b) => currentFilter === 'todos' || b.status === currentFilter)
     .filter((b) => !currentLocation || b.localizacao === currentLocation)
     .filter((b) => !currentGenre || (b.generos || []).some((g) => g.toLowerCase() === currentGenre.toLowerCase()))
+    .filter((b) => !currentFormato || (b.formato || 'fisico') === currentFormato)
     .filter((b) => !currentOnlyLoaned || b.emprestadoPara)
     .filter((b) => {
       if (!search) return true;
@@ -637,6 +712,13 @@ function render() {
       meta.appendChild(tipoBadge);
     }
 
+    if (book.formato && book.formato !== 'fisico') {
+      const formatoBadge = document.createElement('span');
+      formatoBadge.className = 'badge';
+      formatoBadge.textContent = FORMATO_LABEL[book.formato] || book.formato;
+      meta.appendChild(formatoBadge);
+    }
+
     const badge = document.createElement('span');
     badge.className = `badge ${STATUS_CLASS[book.status]}`;
     badge.textContent = STATUS_LABEL[book.status];
@@ -675,6 +757,17 @@ function render() {
       loan.className = 'loan-tag';
       loan.textContent = `📤 Emprestado para ${book.emprestadoPara}`;
       info.appendChild(loan);
+    }
+
+    if (book.linkDigital) {
+      const link = document.createElement('a');
+      link.className = 'digital-link';
+      link.href = book.linkDigital;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = '🔗 Abrir livro';
+      link.addEventListener('click', (event) => event.stopPropagation());
+      info.appendChild(link);
     }
 
     li.append(cover, info);
@@ -742,7 +835,9 @@ form.addEventListener('submit', (event) => {
   const id = idInput.value;
   const status = statusSelect.value;
   const nota = status === 'lido' ? Number(starPicker.dataset.value) || null : null;
-  const localizacao = localizacaoInput.value.trim() || null;
+  const formato = formatoSelect.value;
+  const localizacao = formato === 'fisico' ? (localizacaoInput.value.trim() || null) : null;
+  const linkDigital = formato !== 'fisico' ? (linkDigitalInput.value.trim() || null) : null;
   const emprestadoPara = emprestadoInput.value.trim() || null;
   const isbn = bookIsbnInput.value.trim() || null;
   if (generoInputEl.value.trim()) addGenero(generoInputEl.value);
@@ -764,6 +859,8 @@ form.addEventListener('submit', (event) => {
     existing.titulo = titulo;
     existing.autor = autorInput.value.trim();
     existing.localizacao = localizacao;
+    existing.formato = formato;
+    existing.linkDigital = linkDigital;
     existing.generos = generos;
     delete existing.genero;
     existing.edicao = edicao;
@@ -801,6 +898,8 @@ form.addEventListener('submit', (event) => {
       titulo,
       autor: autorInput.value.trim(),
       localizacao,
+      formato,
+      linkDigital,
       generos,
       edicao,
       tipo,

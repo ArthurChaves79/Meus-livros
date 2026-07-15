@@ -9,6 +9,7 @@ Aplicativo web (PWA) para cadastrar e organizar sua coleção de livros pessoal 
 - Upload manual de capa (foto) quando a busca automática não encontra
 - Gêneros/categorias/áreas em formato de etiquetas (pode adicionar mais de uma por livro, com sugestão automática das já usadas), edição, editora, cidade e ano de publicação — e, para artigos, revista, volume, número, páginas e DOI
 - Filtros de gênero na lista, com contagem de quantos livros tem cada um, para localizar rápido por assunto
+- Formato do livro: físico (na estante), Kindle (comprado), Kindle Unlimited (assinatura) ou Logos Bible Software — com filtro por formato, link opcional para abrir o livro digital e nota correspondente na referência ABNT (ex: "E-book (Kindle)")
 - Geração de referência bibliográfica no padrão ABNT com botão para copiar, útil para bibliografia de TCC/monografia/artigo
 - Sugestão automática de localização na estante ao cadastrar um livro de um autor já cadastrado
 - Aviso de possível duplicado ao cadastrar um livro/artigo já existente

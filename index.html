@@ -53,6 +53,7 @@
 
 <div id="location-filters" class="location-filters" hidden></div>
 <div id="genre-filters" class="location-filters" hidden></div>
+<div id="formato-filters" class="location-filters" hidden></div>
 
 <main>
   <div id="backup-reminder" class="backup-reminder" hidden>
@@ -179,13 +180,35 @@
       </div>
 
       <label class="field">
-        <span>Localização na estante</span>
-        <input type="text" id="localizacao" name="localizacao" autocomplete="off" placeholder="Ex: Estante 2, prateleira 3" />
+        <span>Formato</span>
+        <select id="formato">
+          <option value="fisico">📚 Físico (na estante)</option>
+          <option value="kindle-proprio">📱 Digital – Kindle (comprado)</option>
+          <option value="kindle-unlimited">📱 Digital – Kindle Unlimited (assinatura)</option>
+          <option value="logos">💻 Digital – Logos Bible Software</option>
+        </select>
       </label>
 
-      <div id="location-suggest" class="location-suggest" hidden>
-        <span id="location-suggest-text"></span>
-        <button type="button" id="location-suggest-btn" class="ghost-btn">Usar</button>
+      <div id="location-group">
+        <label class="field">
+          <span>Localização na estante</span>
+          <input type="text" id="localizacao" name="localizacao" autocomplete="off" placeholder="Ex: Estante 2, prateleira 3" />
+        </label>
+
+        <div id="location-suggest" class="location-suggest" hidden>
+          <span id="location-suggest-text"></span>
+          <button type="button" id="location-suggest-btn" class="ghost-btn">Usar</button>
+        </div>
+      </div>
+
+      <div id="digital-link-group" hidden>
+        <label class="field">
+          <span>Link do livro <small>(opcional, do Kindle ou do Logos)</small></span>
+          <div class="isbn-row">
+            <input type="url" id="link-digital" autocomplete="off" placeholder="Cole aqui o link do livro" />
+            <button type="button" id="link-digital-open-btn" class="ghost-btn">Abrir</button>
+          </div>
+        </label>
       </div>
 
       <label class="field">

@@ -406,6 +406,18 @@ main {
   font-weight: 600;
 }
 
+.digital-link {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.digital-link:hover {
+  text-decoration: underline;
+}
+
 dialog {
   border: none;
   border-radius: 14px;
@@ -455,7 +467,9 @@ dialog::backdrop {
 #livro-fields,
 #livro-fields-2,
 #livro-fields-3,
-#artigo-fields {
+#artigo-fields,
+#location-group,
+#digital-link-group {
   display: flex;
   flex-direction: column;
   gap: 0.95rem;
