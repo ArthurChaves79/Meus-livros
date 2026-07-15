@@ -14,6 +14,7 @@ Aplicativo web (PWA) para cadastrar e organizar sua coleção de livros pessoal 
 - Sugestão automática de localização na estante ao cadastrar um livro de um autor já cadastrado
 - Aviso de possível duplicado ao cadastrar um livro/artigo já existente
 - Controle de empréstimos (marcar para quem um livro foi emprestado)
+- Valor pago por livro (opcional) — estatísticas mostram o valor total e o valor médio da biblioteca
 - Estatísticas de leitura (total, lidos no ano, autor mais presente, nota média)
 - Filtrar e buscar por status, localização, autor, gênero, revista, DOI ou pessoa que pegou emprestado
 - Ordenar por título, autor ou mais recentes

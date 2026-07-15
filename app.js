@@ -61,6 +61,7 @@ const artigoFieldsEl = document.getElementById('artigo-fields');
 const editoraInput = document.getElementById('editora');
 const cidadeInput = document.getElementById('cidade');
 const anoInput = document.getElementById('ano');
+const valorInput = document.getElementById('valor');
 const revistaInput = document.getElementById('revista');
 const volumeInput = document.getElementById('volume');
 const numeroInput = document.getElementById('numero');
@@ -194,6 +195,7 @@ function openDialog(book) {
     editoraInput.value = book.editora || '';
     cidadeInput.value = book.cidade || '';
     anoInput.value = book.ano || '';
+    valorInput.value = typeof book.valor === 'number' ? book.valor : '';
     revistaInput.value = book.revista || '';
     volumeInput.value = book.volume || '';
     numeroInput.value = book.numero || '';
@@ -847,6 +849,7 @@ form.addEventListener('submit', (event) => {
   const editora = editoraInput.value.trim() || null;
   const cidade = cidadeInput.value.trim() || null;
   const ano = anoInput.value.trim() || null;
+  const valor = valorInput.value.trim() !== '' ? Number(valorInput.value) : null;
   const revista = revistaInput.value.trim() || null;
   const volume = volumeInput.value.trim() || null;
   const numero = numeroInput.value.trim() || null;
@@ -868,6 +871,7 @@ form.addEventListener('submit', (event) => {
     existing.editora = editora;
     existing.cidade = cidade;
     existing.ano = ano;
+    existing.valor = valor;
     existing.revista = revista;
     existing.volume = volume;
     existing.numero = numero;
@@ -906,6 +910,7 @@ form.addEventListener('submit', (event) => {
       editora,
       cidade,
       ano,
+      valor,
       revista,
       volume,
       numero,
@@ -1171,6 +1176,10 @@ function computeStats(books) {
   const notas = lidos.map((b) => b.nota).filter((n) => typeof n === 'number' && n > 0);
   const notaMedia = notas.length ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(1) : '—';
 
+  const valores = books.map((b) => b.valor).filter((v) => typeof v === 'number' && v > 0);
+  const valorTotal = valores.reduce((a, v) => a + v, 0);
+  const valorMedio = valores.length ? valorTotal / valores.length : 0;
+
   return {
     total,
     lidosTotal: lidos.length,
@@ -1179,7 +1188,14 @@ function computeStats(books) {
     autorTop,
     autorTopCount,
     notaMedia,
+    valorTotal,
+    valorMedio,
+    valoresCount: valores.length,
   };
+}
+
+function formatBRL(value) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function statItem(value, label, wide) {
@@ -1207,6 +1223,14 @@ function renderStats() {
     statItem(
       stats.autorTopCount > 0 ? `${stats.autorTop} (${stats.autorTopCount})` : '—',
       'Autor mais presente',
+      true
+    ),
+    statItem(stats.valoresCount > 0 ? formatBRL(stats.valorTotal) : '—', 'Valor total da biblioteca'),
+    statItem(
+      stats.valoresCount > 0
+        ? `${formatBRL(stats.valorMedio)} (${stats.valoresCount} livro${stats.valoresCount > 1 ? 's' : ''})`
+        : '—',
+      'Valor médio por livro',
       true
     )
   );
